@@ -1,0 +1,50 @@
+{
+  "query": "SELECT nameEn, price FROM menu_items LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute SELECT nameEn, price FROM menu_items LIMIT 10;",
+  "rows": [
+    {
+      "nameEn": "Espresso",
+      "price": "8.00"
+    },
+    {
+      "nameEn": "Double Espresso",
+      "price": "13.90"
+    },
+    {
+      "nameEn": "Carioca Espresso",
+      "price": "12.90"
+    },
+    {
+      "nameEn": "Macchiato",
+      "price": "13.90"
+    },
+    {
+      "nameEn": "Pour Over V60",
+      "price": "18.90"
+    },
+    {
+      "nameEn": "Chemex Brew",
+      "price": "23.90"
+    },
+    {
+      "nameEn": "French Press Coffee",
+      "price": "23.90"
+    },
+    {
+      "nameEn": "Orange Coffee (Iced)",
+      "price": "19.90"
+    },
+    {
+      "nameEn": "Cappuccino",
+      "price": "14.90"
+    },
+    {
+      "nameEn": "Organic Cappuccino",
+      "price": "15.90"
+    }
+  ],
+  "messages": [],
+  "stdout": "nameEn\tprice\nEspresso\t8.00\nDouble Espresso\t13.90\nCarioca Espresso\t12.90\nMacchiato\t13.90\nPour Over V60\t18.90\nChemex Brew\t23.90\nFrench Press Coffee\t23.90\nOrange Coffee (Iced)\t19.90\nCappuccino\t14.90\nOrganic Cappuccino\t15.90\n",
+  "stderr": "",
+  "execution_time_ms": 95
+}

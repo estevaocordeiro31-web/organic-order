@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,4 +88,156 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ===== MENU CATEGORIES =====
+
+export async function getActiveCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(menuCategories).where(eq(menuCategories.active, true)).orderBy(asc(menuCategories.sortOrder));
+}
+
+export async function getAllCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(menuCategories).orderBy(asc(menuCategories.sortOrder));
+}
+
+// ===== MENU ITEMS =====
+
+export async function getAvailableMenuItems() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(menuItems).where(eq(menuItems.available, true)).orderBy(asc(menuItems.sortOrder));
+}
+
+export async function getAllMenuItems() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(menuItems).orderBy(asc(menuItems.sortOrder));
+}
+
+export async function getMenuItemsByCategory(categoryId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(menuItems)
+    .where(and(eq(menuItems.categoryId, categoryId), eq(menuItems.available, true)))
+    .orderBy(asc(menuItems.sortOrder));
+}
+
+export async function toggleMenuItemAvailability(itemId: number, available: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(menuItems).set({ available }).where(eq(menuItems.id, itemId));
+}
+
+// ===== TABLES =====
+
+export async function getActiveTables() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tables).where(eq(tables.active, true)).orderBy(asc(tables.number));
+}
+
+// ===== ORDERS =====
+
+export async function createOrder(data: {
+  tableId: number;
+  studentName: string;
+  totalAmount: string;
+  notes?: string;
+  items: { menuItemId: number; quantity: number; unitPrice: string; notes?: string }[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [orderResult] = await db.insert(orders).values({
+    tableId: data.tableId,
+    studentName: data.studentName,
+    totalAmount: data.totalAmount,
+    notes: data.notes || null,
+    status: "pending",
+  }).$returningId();
+
+  const orderId = orderResult.id;
+
+  for (const item of data.items) {
+    await db.insert(orderItems).values({
+      orderId,
+      menuItemId: item.menuItemId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      notes: item.notes || null,
+    });
+  }
+
+  return orderId;
+}
+
+export async function getOrdersWithItems(statusFilter?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query;
+  if (statusFilter && statusFilter !== "all") {
+    query = db.select().from(orders)
+      .where(eq(orders.status, statusFilter as any))
+      .orderBy(desc(orders.createdAt));
+  } else {
+    query = db.select().from(orders).orderBy(desc(orders.createdAt));
+  }
+
+  const orderList = await query;
+
+  const result = [];
+  for (const order of orderList) {
+    const items = await db.select({
+      id: orderItems.id,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.unitPrice,
+      notes: orderItems.notes,
+      menuItemId: orderItems.menuItemId,
+      nameEn: menuItems.nameEn,
+      namePt: menuItems.namePt,
+    })
+      .from(orderItems)
+      .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+      .where(eq(orderItems.orderId, order.id));
+
+    // Get table info
+    const tableInfo = await db.select().from(tables).where(eq(tables.id, order.tableId)).limit(1);
+
+    result.push({
+      ...order,
+      table: tableInfo[0] || null,
+      items,
+    });
+  }
+
+  return result;
+}
+
+export async function updateOrderStatus(orderId: number, status: "pending" | "preparing" | "ready" | "delivered" | "cancelled") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+}
+
+export async function getTodayOrderStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, pending: 0, preparing: 0, ready: 0, delivered: 0, revenue: 0 };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const allOrders = await db.select().from(orders);
+  const todayOrders = allOrders.filter(o => new Date(o.createdAt) >= today);
+
+  return {
+    total: todayOrders.length,
+    pending: todayOrders.filter(o => o.status === "pending").length,
+    preparing: todayOrders.filter(o => o.status === "preparing").length,
+    ready: todayOrders.filter(o => o.status === "ready").length,
+    delivered: todayOrders.filter(o => o.status === "delivered").length,
+    revenue: todayOrders.filter(o => o.status === "delivered").reduce((sum, o) => sum + parseFloat(o.totalAmount), 0),
+  };
+}
