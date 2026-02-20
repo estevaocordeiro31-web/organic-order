@@ -25,6 +25,7 @@ export const menuCategories = mysqlTable("menu_categories", {
   id: int("id").autoincrement().primaryKey(),
   nameEn: varchar("nameEn", { length: 100 }).notNull(),
   namePt: varchar("namePt", { length: 100 }).notNull(),
+  nameEs: varchar("nameEs", { length: 100 }),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   icon: varchar("icon", { length: 50 }),
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -43,8 +44,10 @@ export const menuItems = mysqlTable("menu_items", {
   categoryId: int("categoryId").notNull(),
   nameEn: varchar("nameEn", { length: 200 }).notNull(),
   namePt: varchar("namePt", { length: 200 }).notNull(),
+  nameEs: varchar("nameEs", { length: 200 }),
   descriptionEn: text("descriptionEn"),
   descriptionPt: text("descriptionPt"),
+  descriptionEs: text("descriptionEs"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("imageUrl"),
   available: boolean("available").default(true).notNull(),
@@ -103,3 +106,42 @@ export const orderItems = mysqlTable("order_items", {
 
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
+
+/**
+ * Ordering expressions / chunks for language exercises
+ * Used in the gamified ordering experience
+ */
+export const orderingExpressions = mysqlTable("ordering_expressions", {
+  id: int("id").autoincrement().primaryKey(),
+  language: mysqlEnum("language", ["en", "es"]).default("en").notNull(),
+  category: mysqlEnum("category", ["greeting", "ordering", "asking", "thanking", "paying", "special_request", "response"]).notNull(),
+  expression: varchar("expression", { length: 500 }).notNull(),
+  translation: varchar("translation", { length: 500 }).notNull(),
+  chunks: text("chunks"),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("easy").notNull(),
+  context: varchar("context", { length: 255 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OrderingExpression = typeof orderingExpressions.$inferSelect;
+export type InsertOrderingExpression = typeof orderingExpressions.$inferInsert;
+
+/**
+ * Student game progress / scores
+ */
+export const gameScores = mysqlTable("game_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  studentName: varchar("studentName", { length: 200 }).notNull(),
+  tableId: int("tableId"),
+  gameType: mysqlEnum("gameType", ["voice_order", "phrase_builder", "qa_simulation"]).notNull(),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("easy").notNull(),
+  score: int("score").default(0).notNull(),
+  totalQuestions: int("totalQuestions").default(0).notNull(),
+  language: mysqlEnum("language", ["en", "es"]).default("en").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GameScore = typeof gameScores.$inferSelect;
+export type InsertGameScore = typeof gameScores.$inferInsert;

@@ -16,6 +16,10 @@ import {
   getOrdersWithItems,
   updateOrderStatus,
   getTodayOrderStats,
+  getExpressionsByLanguage,
+  getExpressionsByCategory,
+  saveGameScore,
+  getStudentScores,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 
@@ -101,6 +105,50 @@ export const appRouter = router({
         const order = allOrders.find(o => o.id === input.orderId);
         if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
         return order;
+      }),
+  }),
+
+  // ===== EXPRESSIONS & GAMES =====
+  expressions: router({
+    byLanguage: publicProcedure
+      .input(z.object({
+        language: z.enum(["en", "es"]),
+        difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+      }))
+      .query(async ({ input }) => {
+        return getExpressionsByLanguage(input.language, input.difficulty);
+      }),
+
+    byCategory: publicProcedure
+      .input(z.object({
+        language: z.enum(["en", "es"]),
+        category: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return getExpressionsByCategory(input.language, input.category);
+      }),
+  }),
+
+  game: router({
+    saveScore: publicProcedure
+      .input(z.object({
+        studentName: z.string().min(1),
+        tableId: z.number().optional(),
+        gameType: z.enum(["voice_order", "phrase_builder", "qa_simulation"]),
+        difficulty: z.enum(["easy", "medium", "hard"]),
+        score: z.number(),
+        totalQuestions: z.number(),
+        language: z.enum(["en", "es"]),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await saveGameScore(input);
+        return { id };
+      }),
+
+    studentScores: publicProcedure
+      .input(z.object({ studentName: z.string() }))
+      .query(async ({ input }) => {
+        return getStudentScores(input.studentName);
       }),
   }),
 

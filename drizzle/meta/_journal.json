@@ -15,6 +15,20 @@
       "when": 1771609044161,
       "tag": "0001_petite_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771611244020,
+      "tag": "0002_serious_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1771613594489,
+      "tag": "0003_uneven_tarot",
+      "breakpoints": true
     }
   ]
 }

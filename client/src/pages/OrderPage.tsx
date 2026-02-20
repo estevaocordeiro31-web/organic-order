@@ -11,11 +11,15 @@ import { useLocation, useSearch } from "wouter";
 import {
   Leaf, ShoppingCart, Plus, Minus, Trash2, ArrowLeft,
   Coffee, CupSoda, Sandwich, Beef, Salad, UtensilsCrossed,
-  IceCreamCone, GlassWater, Croissant, ChevronRight, Send, X, Citrus,
+  IceCreamCone, GlassWater, Croissant, ChevronRight, Send, Citrus,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Icon mapping for categories
+const GABI_ENGLISH = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/fSjaBTevqlMJYHae.png";
+const CRIS_SPANISH = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/vTPizDjRBbaCIUNs.png";
+const GABI_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/DpukkKpvgfOJdjGU.png";
+const CRIS_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/ERTewrUOkIDhpEGI.png";
+
 const iconMap: Record<string, React.ReactNode> = {
   Coffee: <Coffee className="w-5 h-5" />,
   CupSoda: <CupSoda className="w-5 h-5" />,
@@ -32,19 +36,41 @@ const iconMap: Record<string, React.ReactNode> = {
 
 type CartItem = {
   menuItemId: number;
-  nameEn: string;
+  name: string;
   namePt: string;
   price: string;
   quantity: number;
+  imageUrl?: string | null;
 };
 
-type Step = "setup" | "menu" | "cart" | "confirm" | "done";
+type Step = "setup" | "menu" | "cart" | "done";
+
+// Pick a random waiter for the session
+function pickWaiter(lang: "en" | "es") {
+  const isGabi = Math.random() > 0.5;
+  if (lang === "en") {
+    return {
+      name: isGabi ? "Gabi" : "Cris",
+      img: isGabi ? GABI_ENGLISH : CRIS_UNIFORM,
+      flag: "🇺🇸",
+    };
+  }
+  return {
+    name: isGabi ? "Gabi" : "Cris",
+    img: isGabi ? GABI_UNIFORM : CRIS_SPANISH,
+    flag: "🇪🇸",
+  };
+}
+
+// i18n helper
+const t = (lang: "en" | "es", en: string, es: string) => lang === "en" ? en : es;
 
 export default function OrderPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const preselectedTable = params.get("table");
+  const lang = (params.get("lang") as "en" | "es") || "en";
 
   const [step, setStep] = useState<Step>("setup");
   const [studentName, setStudentName] = useState("");
@@ -54,6 +80,7 @@ export default function OrderPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [waiter] = useState(() => pickWaiter(lang));
 
   const { data: categories } = trpc.menu.categories.useQuery();
   const { data: allItems } = trpc.menu.items.useQuery();
@@ -63,10 +90,10 @@ export default function OrderPage() {
     onSuccess: (data) => {
       setOrderId(data.orderId);
       setStep("done");
-      toast.success("Order placed successfully!");
+      toast.success(t(lang, "Order placed successfully!", "¡Pedido realizado con éxito!"));
     },
     onError: (err) => {
-      toast.error("Failed to place order: " + err.message);
+      toast.error(t(lang, "Failed to place order: ", "Error al hacer el pedido: ") + err.message);
     },
   });
 
@@ -84,7 +111,24 @@ export default function OrderPage() {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
-  const addToCart = useCallback((item: { id: number; nameEn: string; namePt: string; price: string }) => {
+  // Get display name based on language
+  const getItemName = useCallback((item: { nameEn: string; nameEs?: string | null }) => {
+    if (lang === "es" && item.nameEs) return item.nameEs;
+    return item.nameEn;
+  }, [lang]);
+
+  const getItemDesc = useCallback((item: { descriptionEn?: string | null; descriptionEs?: string | null }) => {
+    if (lang === "es" && item.descriptionEs) return item.descriptionEs;
+    return item.descriptionEn;
+  }, [lang]);
+
+  const getCatName = useCallback((cat: { nameEn: string; nameEs?: string | null }) => {
+    if (lang === "es" && cat.nameEs) return cat.nameEs;
+    return cat.nameEn;
+  }, [lang]);
+
+  const addToCart = useCallback((item: { id: number; nameEn: string; nameEs?: string | null; namePt: string; price: string; imageUrl?: string | null }) => {
+    const displayName = lang === "es" && item.nameEs ? item.nameEs : item.nameEn;
     setCart((prev) => {
       const existing = prev.find((c) => c.menuItemId === item.id);
       if (existing) {
@@ -92,10 +136,13 @@ export default function OrderPage() {
           c.menuItemId === item.id ? { ...c, quantity: c.quantity + 1 } : c
         );
       }
-      return [...prev, { menuItemId: item.id, nameEn: item.nameEn, namePt: item.namePt, price: item.price, quantity: 1 }];
+      return [...prev, { menuItemId: item.id, name: displayName, namePt: item.namePt, price: item.price, quantity: 1, imageUrl: item.imageUrl }];
     });
-    toast.success(`Added "${item.nameEn}" to your order!`);
-  }, []);
+    const msg = lang === "en"
+      ? `Added "${displayName}" to your order!`
+      : `"${displayName}" añadido a tu pedido!`;
+    toast.success(msg);
+  }, [lang]);
 
   const updateQuantity = useCallback((menuItemId: number, delta: number) => {
     setCart((prev) =>
@@ -133,29 +180,38 @@ export default function OrderPage() {
             onClick={() => navigate("/")}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {t(lang, "Back", "Volver")}
           </button>
 
+          {/* Waiter greeting */}
           <div className="text-center mb-8">
-            <Leaf className="w-8 h-8 text-primary mx-auto mb-2" />
+            <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 border-2 border-primary/30 shadow-lg">
+              <img src={waiter.img} alt={waiter.name} className="w-full h-full object-cover" />
+            </div>
             <h1
-              className="text-3xl font-bold text-foreground mb-2"
+              className="text-2xl font-bold text-foreground mb-2"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              Welcome!
+              {waiter.flag} {t(lang,
+                `Hi! I'm ${waiter.name}, your server today!`,
+                `¡Hola! Soy ${waiter.name}, tu mesero hoy!`
+              )}
             </h1>
-            <p className="text-muted-foreground">
-              Let's get you started. What's your name?
+            <p className="text-muted-foreground text-sm">
+              {t(lang,
+                "What's your name? And which table are you at?",
+                "¿Cómo te llamas? ¿En qué mesa estás?"
+              )}
             </p>
           </div>
 
           <div className="space-y-6">
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
-                Your name
+                {t(lang, "Your name", "Tu nombre")}
               </label>
               <Input
-                placeholder="e.g. Maria, João, Pedro..."
+                placeholder={t(lang, "e.g. Maria, João, Pedro...", "ej. María, João, Pedro...")}
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 className="text-lg py-5"
@@ -164,7 +220,7 @@ export default function OrderPage() {
 
             <div>
               <label className="text-sm font-medium text-foreground mb-3 block">
-                Which table are you at?
+                {t(lang, "Which table are you at?", "¿En qué mesa estás?")}
               </label>
               <div className="grid grid-cols-5 gap-2">
                 {tables?.map((table) => (
@@ -189,7 +245,7 @@ export default function OrderPage() {
               disabled={!studentName.trim() || !tableId}
               onClick={() => setStep("menu")}
             >
-              View Menu <ChevronRight className="w-5 h-5 ml-1" />
+              {t(lang, "View Menu", "Ver Menú")} <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
           </div>
         </div>
@@ -213,10 +269,10 @@ export default function OrderPage() {
               </button>
               <div className="text-center">
                 <h1 className="font-semibold text-foreground text-sm">
-                  Organic In The Box
+                  Organic In The Box {waiter.flag}
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Table {tables?.find((t) => t.id === tableId)?.number} · {studentName}
+                  {t(lang, "Table", "Mesa")} {tables?.find((t) => t.id === tableId)?.number} · {studentName}
                 </p>
               </div>
               <button
@@ -244,7 +300,7 @@ export default function OrderPage() {
                     : "bg-muted text-muted-foreground hover:bg-accent"
                 }`}
               >
-                All
+                {t(lang, "All", "Todo")}
               </button>
               {categories?.map((cat) => (
                 <button
@@ -257,17 +313,33 @@ export default function OrderPage() {
                   }`}
                 >
                   {cat.icon && iconMap[cat.icon]}
-                  {cat.nameEn}
+                  {getCatName(cat)}
                 </button>
               ))}
             </div>
           </ScrollArea>
         </div>
 
+        {/* Waiter tip bubble */}
+        <div className="container mx-auto px-4 pt-4 pb-2">
+          <Card className="border-primary/20 bg-[var(--organic-cream)]">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-primary/20">
+                <img src={waiter.img} alt={waiter.name} className="w-full h-full object-cover" />
+              </div>
+              <p className="text-xs text-muted-foreground italic">
+                {t(lang,
+                  `"Take your time, ${studentName}! Just tap the + button to add items to your order."`,
+                  `"¡Tómate tu tiempo, ${studentName}! Solo toca el botón + para agregar items a tu pedido."`
+                )}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Menu Items */}
         <div className="container mx-auto px-4 py-4">
           {selectedCategory === null ? (
-            // Show grouped by category
             categories?.map((cat) => {
               const catItems = allItems?.filter((i) => i.categoryId === cat.id) || [];
               if (catItems.length === 0) return null;
@@ -281,7 +353,7 @@ export default function OrderPage() {
                       className="text-xl font-bold text-foreground"
                       style={{ fontFamily: "'Playfair Display', serif" }}
                     >
-                      {cat.nameEn}
+                      {getCatName(cat)}
                     </h2>
                   </div>
                   <div className="grid gap-3">
@@ -289,6 +361,9 @@ export default function OrderPage() {
                       <MenuItemCard
                         key={item.id}
                         item={item}
+                        lang={lang}
+                        getName={getItemName}
+                        getDesc={getItemDesc}
                         onAdd={addToCart}
                         cartQty={cart.find((c) => c.menuItemId === item.id)?.quantity || 0}
                       />
@@ -303,6 +378,9 @@ export default function OrderPage() {
                 <MenuItemCard
                   key={item.id}
                   item={item}
+                  lang={lang}
+                  getName={getItemName}
+                  getDesc={getItemDesc}
                   onAdd={addToCart}
                   cartQty={cart.find((c) => c.menuItemId === item.id)?.quantity || 0}
                 />
@@ -324,7 +402,7 @@ export default function OrderPage() {
               onClick={() => setStep("cart")}
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              View Order ({cartCount} {cartCount === 1 ? "item" : "items"}) · R$ {cartTotal.toFixed(2)}
+              {t(lang, "View Order", "Ver Pedido")} ({cartCount} {cartCount === 1 ? "item" : "items"}) · R$ {cartTotal.toFixed(2)}
             </Button>
           </motion.div>
         )}
@@ -342,9 +420,11 @@ export default function OrderPage() {
               onClick={() => setStep("menu")}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Menu
+              <ArrowLeft className="w-4 h-4" /> {t(lang, "Back to Menu", "Volver al Menú")}
             </button>
-            <h1 className="font-semibold text-foreground">Your Order</h1>
+            <h1 className="font-semibold text-foreground">
+              {t(lang, "Your Order", "Tu Pedido")}
+            </h1>
             <div className="w-20" />
           </div>
         </div>
@@ -353,16 +433,15 @@ export default function OrderPage() {
           {cart.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingCart className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">Your cart is empty.</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Go back to the menu and add some items!
+              <p className="text-muted-foreground">
+                {t(lang, "Your cart is empty.", "Tu carrito está vacío.")}
               </p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => setStep("menu")}
               >
-                Browse Menu
+                {t(lang, "Browse Menu", "Ver Menú")}
               </Button>
             </div>
           ) : (
@@ -371,13 +450,16 @@ export default function OrderPage() {
               <Card className="mb-6 border-primary/20 bg-[var(--organic-cream)]">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-lg">👨‍🍳</span>
+                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-primary/20">
+                      <img src={waiter.img} alt={waiter.name} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Server</p>
+                      <p className="text-sm font-medium text-foreground mb-1">{waiter.name}</p>
                       <p className="text-sm text-muted-foreground italic">
-                        "So, {studentName}, let me confirm your order. You'd like..."
+                        {t(lang,
+                          `"So, ${studentName}, let me confirm your order. You'd like..."`,
+                          `"Entonces, ${studentName}, déjame confirmar tu pedido. Quieres..."`
+                        )}
                       </p>
                     </div>
                   </div>
@@ -395,40 +477,45 @@ export default function OrderPage() {
                       exit={{ opacity: 0, x: 20 }}
                     >
                       <Card>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-3">
+                            {item.imageUrl && (
+                              <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
+                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">
-                                {item.nameEn}
+                              <p className="font-medium text-foreground text-sm truncate">
+                                {item.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {item.namePt}
                               </p>
-                              <p className="text-sm font-semibold text-primary mt-1">
+                              <p className="text-sm font-semibold text-primary mt-0.5">
                                 R$ {(parseFloat(item.price) * item.quantity).toFixed(2)}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 ml-3">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 onClick={() => updateQuantity(item.menuItemId, -1)}
-                                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                                className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
-                              <span className="w-6 text-center font-semibold text-sm">
+                              <span className="w-5 text-center font-semibold text-xs">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => updateQuantity(item.menuItemId, 1)}
-                                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                                className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
                               <button
                                 onClick={() => removeFromCart(item.menuItemId)}
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors ml-1"
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors ml-1"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
@@ -460,13 +547,16 @@ export default function OrderPage() {
               <Card className="mb-6 border-primary/20 bg-[var(--organic-cream)]">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-lg">👨‍🍳</span>
+                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-primary/20">
+                      <img src={waiter.img} alt={waiter.name} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Server</p>
+                      <p className="text-sm font-medium text-foreground mb-1">{waiter.name}</p>
                       <p className="text-sm text-muted-foreground italic">
-                        "That'll be R$ {cartTotal.toFixed(2)}. Would you like to confirm your order?"
+                        {t(lang,
+                          `"That'll be R$ ${cartTotal.toFixed(2)}. Would you like to confirm your order?"`,
+                          `"Serán R$ ${cartTotal.toFixed(2)}. ¿Deseas confirmar tu pedido?"`
+                        )}
                       </p>
                     </div>
                   </div>
@@ -486,11 +576,11 @@ export default function OrderPage() {
               disabled={createOrderMutation.isPending}
             >
               {createOrderMutation.isPending ? (
-                "Sending order..."
+                t(lang, "Sending order...", "Enviando pedido...")
               ) : (
                 <>
                   <Send className="w-5 h-5 mr-2" />
-                  "Yes, please!" — Confirm Order
+                  {t(lang, '"Yes, please!" — Confirm Order', '"¡Sí, por favor!" — Confirmar Pedido')}
                 </>
               )}
             </Button>
@@ -500,7 +590,7 @@ export default function OrderPage() {
               className="w-full text-sm py-3 rounded-xl"
               onClick={() => setStep("menu")}
             >
-              Add more items
+              {t(lang, "Add more items", "Agregar más items")}
             </Button>
           </div>
         )}
@@ -527,25 +617,30 @@ export default function OrderPage() {
             className="text-3xl font-bold text-foreground mb-3"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            Order Confirmed!
+            {t(lang, "Order Confirmed!", "¡Pedido Confirmado!")}
           </h1>
 
           <p className="text-muted-foreground mb-2">
-            Your order <strong className="text-foreground">#{orderId}</strong> has been sent to the kitchen.
+            {lang === "en" ? (
+              <>Your order <strong className="text-foreground">#{orderId}</strong> has been sent to the kitchen.</>
+            ) : (
+              <>Tu pedido <strong className="text-foreground">#{orderId}</strong> ha sido enviado a la cocina.</>
+            )}
           </p>
 
           <Card className="mb-6 border-primary/20 bg-[var(--organic-cream)]">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-lg">👨‍🍳</span>
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-primary/20">
+                  <img src={waiter.img} alt={waiter.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-foreground mb-1">Server</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{waiter.name}</p>
                   <p className="text-sm text-muted-foreground italic">
-                    "Thank you, {studentName}! Your order is being prepared. 
-                    We'll bring it to Table {tables?.find((t) => t.id === tableId)?.number} shortly. 
-                    Enjoy your meal!"
+                    {t(lang,
+                      `"Thank you, ${studentName}! Your order is being prepared. We'll bring it to Table ${tables?.find((tb) => tb.id === tableId)?.number} shortly. Enjoy your meal!"`,
+                      `"¡Gracias, ${studentName}! Tu pedido está siendo preparado. Lo llevaremos a la Mesa ${tables?.find((tb) => tb.id === tableId)?.number} pronto. ¡Buen provecho!"`
+                    )}
                   </p>
                 </div>
               </div>
@@ -553,8 +648,15 @@ export default function OrderPage() {
           </Card>
 
           <div className="bg-muted rounded-xl p-4 mb-6 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">🎓 Great job practicing English!</p>
-            <p>You just ordered food in English like a pro. Keep it up!</p>
+            <p className="font-medium text-foreground mb-1">
+              {t(lang, "🎓 Great job practicing!", "🎓 ¡Excelente práctica!")}
+            </p>
+            <p>
+              {t(lang,
+                `You just ordered food in English like a pro. Keep it up, ${studentName}!`,
+                `Acabas de pedir comida en español como un profesional. ¡Sigue así, ${studentName}!`
+              )}
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -567,14 +669,14 @@ export default function OrderPage() {
                 setStep("menu");
               }}
             >
-              Order Something Else
+              {t(lang, "Order Something Else", "Pedir Algo Más")}
             </Button>
             <Button
               variant="ghost"
               onClick={() => navigate("/")}
               className="text-muted-foreground"
             >
-              Back to Home
+              {t(lang, "Back to Home", "Volver al Inicio")}
             </Button>
           </div>
         </div>
@@ -588,66 +690,88 @@ export default function OrderPage() {
 // ===== MENU ITEM CARD COMPONENT =====
 function MenuItemCard({
   item,
+  lang,
+  getName,
+  getDesc,
   onAdd,
   cartQty,
 }: {
   item: {
     id: number;
     nameEn: string;
+    nameEs?: string | null;
     namePt: string;
     descriptionEn: string | null;
+    descriptionEs?: string | null;
     price: string;
     tags: string | null;
+    imageUrl?: string | null;
   };
-  onAdd: (item: { id: number; nameEn: string; namePt: string; price: string }) => void;
+  lang: "en" | "es";
+  getName: (item: { nameEn: string; nameEs?: string | null }) => string;
+  getDesc: (item: { descriptionEn?: string | null; descriptionEs?: string | null }) => string | null | undefined;
+  onAdd: (item: { id: number; nameEn: string; nameEs?: string | null; namePt: string; price: string; imageUrl?: string | null }) => void;
   cartQty: number;
 }) {
   const tags = item.tags?.split(",") || [];
+  const displayName = getName(item);
+  const displayDesc = getDesc(item);
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-foreground text-sm leading-tight">
-                {item.nameEn}
-              </h3>
-              {cartQty > 0 && (
-                <Badge variant="secondary" className="text-xs shrink-0">
-                  {cartQty}x
-                </Badge>
+      <CardContent className="p-0">
+        <div className="flex">
+          {/* Image */}
+          {item.imageUrl && (
+            <div className="w-24 h-24 shrink-0 bg-muted">
+              <img src={item.imageUrl} alt={displayName} className="w-full h-full object-cover" />
+            </div>
+          )}
+          {/* Content */}
+          <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-semibold text-foreground text-sm leading-tight truncate">
+                  {displayName}
+                </h3>
+                {cartQty > 0 && (
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    {cartQty}x
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 mb-0.5">{item.namePt}</p>
+              {displayDesc && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {displayDesc}
+                </p>
               )}
             </div>
-            <p className="text-xs text-muted-foreground/70 mb-1">{item.namePt}</p>
-            {item.descriptionEn && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                {item.descriptionEn}
-              </p>
-            )}
-            <div className="flex items-center gap-2 flex-wrap">
-              {tags.slice(0, 3).map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70"
+            <div className="flex items-center justify-between mt-1.5">
+              <div className="flex items-center gap-1 flex-wrap">
+                {tags.slice(0, 2).map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="text-[9px] px-1 py-0 border-primary/20 text-primary/70"
+                  >
+                    {tag.trim()}
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="font-bold text-primary text-sm">
+                  R$ {parseFloat(item.price).toFixed(2)}
+                </span>
+                <Button
+                  size="sm"
+                  className="rounded-full h-7 w-7 p-0"
+                  onClick={() => onAdd(item)}
                 >
-                  {tag.trim()}
-                </Badge>
-              ))}
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className="font-bold text-primary text-sm">
-              R$ {parseFloat(item.price).toFixed(2)}
-            </span>
-            <Button
-              size="sm"
-              className="rounded-full h-8 w-8 p-0"
-              onClick={() => onAdd(item)}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </CardContent>

@@ -9,6 +9,9 @@ import OrderPage from "./pages/OrderPage";
 import OrderStatus from "./pages/OrderStatus";
 import AdminDashboard from "./pages/AdminDashboard";
 import QRCodes from "./pages/QRCodes";
+import PhraseBuilder from "./pages/PhraseBuilder";
+import VoiceOrder from "./pages/VoiceOrder";
+import QASimulation from "./pages/QASimulation";
 
 function Router() {
   return (
@@ -16,6 +19,9 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/order"} component={OrderPage} />
       <Route path={"/order/status/:id"} component={OrderStatus} />
+      <Route path={"/game/phrase-builder"} component={PhraseBuilder} />
+      <Route path={"/game/voice-order"} component={VoiceOrder} />
+      <Route path={"/game/qa-simulation"} component={QASimulation} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/qrcodes"} component={QRCodes} />
       <Route path={"/404"} component={NotFound} />

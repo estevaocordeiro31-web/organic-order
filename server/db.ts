@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -220,6 +220,65 @@ export async function updateOrderStatus(orderId: number, status: "pending" | "pr
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+}
+
+// ===== ORDERING EXPRESSIONS =====
+
+export async function getExpressionsByLanguage(language: "en" | "es", difficulty?: "easy" | "medium" | "hard") {
+  const db = await getDb();
+  if (!db) return [];
+  if (difficulty) {
+    return db.select().from(orderingExpressions)
+      .where(and(
+        eq(orderingExpressions.language, language),
+        eq(orderingExpressions.difficulty, difficulty),
+        eq(orderingExpressions.active, true)
+      ))
+      .orderBy(asc(orderingExpressions.sortOrder));
+  }
+  return db.select().from(orderingExpressions)
+    .where(and(
+      eq(orderingExpressions.language, language),
+      eq(orderingExpressions.active, true)
+    ))
+    .orderBy(asc(orderingExpressions.sortOrder));
+}
+
+export async function getExpressionsByCategory(language: "en" | "es", category: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(orderingExpressions)
+    .where(and(
+      eq(orderingExpressions.language, language),
+      eq(orderingExpressions.category, category as any),
+      eq(orderingExpressions.active, true)
+    ))
+    .orderBy(asc(orderingExpressions.sortOrder));
+}
+
+// ===== GAME SCORES =====
+
+export async function saveGameScore(data: {
+  studentName: string;
+  tableId?: number;
+  gameType: "voice_order" | "phrase_builder" | "qa_simulation";
+  difficulty: "easy" | "medium" | "hard";
+  score: number;
+  totalQuestions: number;
+  language: "en" | "es";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(gameScores).values(data).$returningId();
+  return result.id;
+}
+
+export async function getStudentScores(studentName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(gameScores)
+    .where(eq(gameScores.studentName, studentName))
+    .orderBy(desc(gameScores.createdAt));
 }
 
 export async function getTodayOrderStats() {
