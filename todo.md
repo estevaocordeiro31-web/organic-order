@@ -35,23 +35,23 @@
 - [x] Avatar Disney-Pixar do Cris com camiseta da Espanha (espanhol)
 - [x] Avatares com uniforme do Organic (welcome page)
 - [x] Imagens dos itens do cardápio
-- [ ] Reestruturar página inicial: boas-vindas ao Organic + seleção de idioma
-- [ ] Botões de idioma: Gabi (inglês/EUA) e Cris (espanhol/Espanha)
+- [x] Reestruturar página inicial: boas-vindas ao Organic + seleção de idioma
+- [x] Botões de idioma: Gabi (inglês/EUA) e Cris (espanhol/Espanha)
 - [x] Suporte a espanhol no cardápio (descriptionEs, nameEs)
-- [ ] Integrar avatares e imagens no app
+- [x] Integrar avatares e imagens no app
 
 ## v3 - Gamificação e Experiência Educacional Completa
 - [x] Gerar avatares Cris e Gabi com uniforme Organic In The Box
 - [x] Criar vídeo de boas-vindas Ken Burns com narração e legendas duplas (EN/PT)
-- [ ] Botão de pular animação
-- [ ] Exercícios de chunks e vocabulário pós-animação
-- [ ] Seleção de idioma (Gabi=English, Cris=Español)
-- [ ] Sistema de pedidos por voz - nível fácil (vê a opção e lê gravando)
-- [ ] Sistema de pedidos por voz - nível médio (vê a opção, some na hora de gravar)
-- [ ] Sistema de pedidos por voz - nível avançado (sem referência, avatar faz pergunta)
-- [ ] Garçom aleatório (Gabi ou Cris) inicia atendimento
-- [ ] Jogo de perguntas e respostas por comando de voz (simulação real)
-- [ ] Jogo de ordenar expressões (chunks, collocations, frases fixas/semi-fixas)
+- [x] Botão de pular animação
+- [x] Exercícios de chunks e vocabulário pós-animação (PhraseBuilder)
+- [x] Seleção de idioma (Gabi=English, Cris=Español)
+- [x] Sistema de pedidos por voz - nível fácil (vê a opção e lê gravando)
+- [x] Sistema de pedidos por voz - nível médio (vê a opção, some na hora de gravar)
+- [x] Sistema de pedidos por voz - nível avançado (sem referência, avatar faz pergunta)
+- [x] Garçom aleatório (Gabi ou Cris) inicia atendimento
+- [x] Jogo de perguntas e respostas por comando de voz (QASimulation)
+- [x] Jogo de ordenar expressões (PhraseBuilder com chunks)
 - [x] Seed de dados em espanhol para cardápio
 - [x] Atualizar imagens dos itens do cardápio no banco
 - [x] Gerar animações do Cris e Gabi atendendo no cenário real do Organic (vídeo Ken Burns 33s)
@@ -59,3 +59,15 @@
 - [x] Logo Organic In The Box em destaque no topo
 - [x] Imagens maiores do Cris e da Gabi na seleção de idioma
 - [x] Frase-chave dos donos na página de boas-vindas
+
+## v5 - Reconhecimento de Voz, Pontuação e Notificações
+- [x] Integrar Web Speech API no Voice Order (gravação e transcrição real)
+- [x] Integrar Web Speech API no Q&A Simulation (gravação e transcrição real)
+- [x] Feedback de pronúncia/acerto com comparação de texto
+- [x] Hook reutilizável useSpeechRecognition para todos os jogos
+- [x] Sistema de pontuação por atividade (XP por acerto)
+- [x] Tabela de scores no banco de dados
+- [x] Leaderboard/ranking entre alunos da InFlux
+- [x] Notificações sonoras no painel admin quando novo pedido chegar
+- [x] Polling automático de pedidos no admin dashboard
+- [x] Indicador visual de novos pedidos (badge/contador)

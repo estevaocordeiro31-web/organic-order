@@ -281,6 +281,46 @@ export async function getStudentScores(studentName: string) {
     .orderBy(desc(gameScores.createdAt));
 }
 
+export async function getLeaderboard(gameType?: string, language?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get all scores and aggregate in JS for flexibility
+  const allScores = await db.select().from(gameScores).orderBy(desc(gameScores.createdAt));
+  
+  // Filter if needed
+  let filtered = allScores;
+  if (gameType && gameType !== 'all') {
+    filtered = filtered.filter(s => s.gameType === gameType);
+  }
+  if (language && language !== 'all') {
+    filtered = filtered.filter(s => s.language === language);
+  }
+  
+  // Aggregate by student
+  const studentMap = new Map<string, { studentName: string; totalScore: number; totalQuestions: number; gamesPlayed: number; bestPercentage: number }>();
+  
+  for (const score of filtered) {
+    const existing = studentMap.get(score.studentName) || {
+      studentName: score.studentName,
+      totalScore: 0,
+      totalQuestions: 0,
+      gamesPlayed: 0,
+      bestPercentage: 0,
+    };
+    existing.totalScore += score.score;
+    existing.totalQuestions += score.totalQuestions;
+    existing.gamesPlayed += 1;
+    const pct = score.totalQuestions > 0 ? Math.round((score.score / score.totalQuestions) * 100) : 0;
+    if (pct > existing.bestPercentage) existing.bestPercentage = pct;
+    studentMap.set(score.studentName, existing);
+  }
+  
+  return Array.from(studentMap.values())
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .slice(0, 50);
+}
+
 export async function getTodayOrderStats() {
   const db = await getDb();
   if (!db) return { total: 0, pending: 0, preparing: 0, ready: 0, delivered: 0, revenue: 0 };

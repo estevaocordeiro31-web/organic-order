@@ -12,6 +12,7 @@ import QRCodes from "./pages/QRCodes";
 import PhraseBuilder from "./pages/PhraseBuilder";
 import VoiceOrder from "./pages/VoiceOrder";
 import QASimulation from "./pages/QASimulation";
+import Leaderboard from "./pages/Leaderboard";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/game/phrase-builder"} component={PhraseBuilder} />
       <Route path={"/game/voice-order"} component={VoiceOrder} />
       <Route path={"/game/qa-simulation"} component={QASimulation} />
+      <Route path={"/game/leaderboard"} component={Leaderboard} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/qrcodes"} component={QRCodes} />
       <Route path={"/404"} component={NotFound} />

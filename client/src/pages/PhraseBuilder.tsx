@@ -19,7 +19,10 @@ export default function PhraseBuilder() {
   const lang = (params.get("lang") as "en" | "es") || "en";
   const isEnglish = lang === "en";
 
+  const studentName = params.get("student") || "";
+
   const { data: expressions, isLoading } = trpc.expressions.byLanguage.useQuery({ language: lang });
+  const saveScoreMutation = trpc.game.saveScore.useMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledChunks, setShuffledChunks] = useState<Chunk[]>([]);
@@ -81,6 +84,16 @@ export default function PhraseBuilder() {
   const handleNext = () => {
     if (currentIndex + 1 >= filteredExpressions.length) {
       setGameOver(true);
+      if (studentName) {
+        saveScoreMutation.mutate({
+          studentName,
+          gameType: "phrase_builder",
+          difficulty: difficulty || "easy",
+          score,
+          totalQuestions: totalAttempts,
+          language: lang,
+        });
+      }
     } else {
       setCurrentIndex(prev => prev + 1);
     }
@@ -213,6 +226,9 @@ export default function PhraseBuilder() {
           <div className="space-y-3">
             <Button size="lg" className="w-full rounded-xl" onClick={handleRestart}>
               <RotateCcw className="w-4 h-4 mr-2" /> {isEnglish ? "Play Again" : "Jugar de Nuevo"}
+            </Button>
+            <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={() => navigate(`/game/leaderboard?lang=${lang}`)}>
+              <Trophy className="w-4 h-4 mr-2" /> {isEnglish ? "Leaderboard" : "Ranking"}
             </Button>
             <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={() => navigate(`/order?lang=${lang}`)}>
               🍽️ {isEnglish ? "Order from Menu" : "Pedir del Menú"}

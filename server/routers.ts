@@ -20,6 +20,7 @@ import {
   getExpressionsByCategory,
   saveGameScore,
   getStudentScores,
+  getLeaderboard,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 
@@ -149,6 +150,15 @@ export const appRouter = router({
       .input(z.object({ studentName: z.string() }))
       .query(async ({ input }) => {
         return getStudentScores(input.studentName);
+      }),
+
+    leaderboard: publicProcedure
+      .input(z.object({
+        gameType: z.string().optional(),
+        language: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getLeaderboard(input?.gameType, input?.language);
       }),
   }),
 

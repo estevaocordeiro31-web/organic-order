@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { getLoginUrl } from "@/const";
 import {
   Leaf, Clock, ChefHat, CheckCircle2, Truck, XCircle,
   ShoppingCart, DollarSign, TrendingUp, ArrowRight, LogOut,
-  RefreshCw, Loader2, QrCode,
+  RefreshCw, Loader2, QrCode, Bell, BellOff, Trophy, Volume2,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,16 +25,82 @@ const statusFlow: Record<string, { next: string; label: string; icon: React.Reac
   cancelled: { next: "", label: "Cancelled", icon: <XCircle className="w-4 h-4" />, color: "bg-red-100 text-red-800 border-red-200" },
 };
 
+function useNotificationSound() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [enabled, setEnabled] = useState(() => {
+    try { return localStorage.getItem("organic-sound") !== "off"; } catch { return true; }
+  });
+
+  useEffect(() => {
+    // Create a simple notification beep using AudioContext
+    try {
+      localStorage.setItem("organic-sound", enabled ? "on" : "off");
+    } catch {}
+  }, [enabled]);
+
+  const playSound = useCallback(() => {
+    if (!enabled) return;
+    try {
+      const ctx = new AudioContext();
+      // First beep
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.frequency.value = 880;
+      osc1.type = "sine";
+      gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.3);
+      // Second beep
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.value = 1100;
+      osc2.type = "sine";
+      gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.35);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.65);
+      osc2.start(ctx.currentTime + 0.35);
+      osc2.stop(ctx.currentTime + 0.65);
+    } catch {}
+  }, [enabled]);
+
+  return { playSound, enabled, setEnabled };
+}
+
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("orders");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { playSound, enabled: soundEnabled, setEnabled: setSoundEnabled } = useNotificationSound();
+  const prevOrderCountRef = useRef<number | null>(null);
 
   const { data: orders, refetch: refetchOrders, isLoading: ordersLoading } = trpc.admin.orders.useQuery(
     { status: statusFilter === "all" ? undefined : statusFilter },
     { refetchInterval: 5000, enabled: isAuthenticated && user?.role === "admin" }
   );
+
+  const { data: leaderboard } = trpc.game.leaderboard.useQuery(
+    { language: "en" },
+    { enabled: isAuthenticated && user?.role === "admin" }
+  );
+
+  // Sound notification for new orders
+  useEffect(() => {
+    if (!orders) return;
+    const pendingCount = orders.filter((o: any) => o.status === "pending").length;
+    if (prevOrderCountRef.current !== null && pendingCount > prevOrderCountRef.current) {
+      playSound();
+      toast.success(`New order received! (${pendingCount} pending)`, {
+        duration: 5000,
+        icon: "🔔",
+      });
+    }
+    prevOrderCountRef.current = pendingCount;
+  }, [orders, playSound]);
 
   const { data: stats, refetch: refetchStats } = trpc.admin.stats.useQuery(undefined, {
     refetchInterval: 10000,
@@ -125,6 +191,14 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? "Mute notifications" : "Enable notifications"}
+            >
+              {soundEnabled ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/admin/qrcodes")}>
               <QrCode className="w-4 h-4" />
             </Button>
@@ -165,6 +239,7 @@ export default function AdminDashboard() {
           <TabsList className="mb-4">
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="menu">Menu</TabsTrigger>
+            <TabsTrigger value="leaderboard">Ranking</TabsTrigger>
           </TabsList>
 
           {/* ORDERS TAB */}
@@ -297,6 +372,58 @@ export default function AdminDashboard() {
                 </AnimatePresence>
               </div>
             )}
+          </TabsContent>
+
+          {/* LEADERBOARD TAB */}
+          <TabsContent value="leaderboard">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  Student Leaderboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!leaderboard || leaderboard.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Trophy className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No game scores yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.map((entry: any, index: number) => (
+                      <div
+                        key={`${entry.studentName}-${index}`}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${
+                          index === 0 ? "bg-amber-50 border-amber-200" :
+                          index === 1 ? "bg-gray-50 border-gray-200" :
+                          index === 2 ? "bg-orange-50 border-orange-200" :
+                          "border-border"
+                        }`}
+                      >
+                        <span className={`w-6 text-center font-bold text-sm ${
+                          index === 0 ? "text-amber-600" : index === 1 ? "text-gray-500" : index === 2 ? "text-orange-600" : "text-muted-foreground"
+                        }`}>
+                          {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}`}
+                        </span>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-foreground">{entry.studentName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {entry.gamesPlayed} games · Best: {entry.bestPercentage}%
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm text-primary">{entry.totalScore}/{entry.totalQuestions}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {Math.round((entry.totalScore / Math.max(entry.totalQuestions, 1)) * 100)}%
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* MENU TAB */}

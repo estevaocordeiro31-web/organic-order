@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const GABI_ENGLISH = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/fSjaBTevqlMJYHae.png";
 const CRIS_SPANISH = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/vTPizDjRBbaCIUNs.png";
+const GABI_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/DpukkKpvgfOJdjGU.png";
+const CRIS_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/ERTewrUOkIDhpEGI.png";
 
 type Difficulty = "easy" | "medium" | "hard";
 
@@ -17,9 +19,11 @@ export default function VoiceOrder() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const lang = (params.get("lang") as "en" | "es") || "en";
+  const studentName = params.get("student") || "";
   const isEnglish = lang === "en";
 
   const { data: expressions, isLoading } = trpc.expressions.byLanguage.useQuery({ language: lang });
+  const saveScoreMutation = trpc.game.saveScore.useMutation();
 
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,8 +35,15 @@ export default function VoiceOrder() {
   const [gameOver, setGameOver] = useState(false);
   const [showPhrase, setShowPhrase] = useState(true);
   const [recordingTimer, setRecordingTimer] = useState(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Randomly pick waiter
+  const [waiter] = useState(() => Math.random() > 0.5 ? "gabi" : "cris");
+  const waiterImg = waiter === "gabi" ? GABI_UNIFORM : CRIS_UNIFORM;
+  const waiterLangImg = isEnglish ? GABI_ENGLISH : CRIS_SPANISH;
+  const waiterName = waiter === "gabi" ? "Gabi" : "Cris";
 
   const filteredExpressions = useMemo(() => {
     if (!expressions || !difficulty) return [];
@@ -54,20 +65,35 @@ export default function VoiceOrder() {
     }
   }, [difficulty, currentExpression, currentIndex]);
 
+  // TTS: speak the phrase for the student to hear
+  const speakPhrase = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = isEnglish ? "en-US" : "es-ES";
+      utterance.rate = 0.85;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const startRecording = () => {
     setTranscript("");
     setShowResult(null);
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setTranscript("Speech recognition not supported in this browser. Try Chrome.");
+      setTranscript(isEnglish
+        ? "Speech recognition not supported in this browser. Try Chrome on your phone!"
+        : "Reconocimiento de voz no soportado. ¡Usa Chrome en tu celular!");
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.lang = isEnglish ? "en-US" : "es-ES";
     recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
       const results = event.results[0];
@@ -75,9 +101,9 @@ export default function VoiceOrder() {
 
       // Check all alternatives for best match
       if (currentExpression) {
-        const target = currentExpression.expression.toLowerCase();
+        const target = currentExpression.expression.toLowerCase().replace(/[.,!?']/g, "");
         for (let i = 0; i < results.length; i++) {
-          const alt = results[i].transcript.toLowerCase();
+          const alt = results[i].transcript.toLowerCase().replace(/[.,!?']/g, "");
           if (alt === target || alt.includes(target) || target.includes(alt)) {
             bestMatch = results[i].transcript;
             break;
@@ -89,8 +115,6 @@ export default function VoiceOrder() {
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
       setRecordingTimer(0);
-
-      // Check answer
       checkAnswer(bestMatch);
     };
 
@@ -110,18 +134,12 @@ export default function VoiceOrder() {
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-
-    // Timer
     setRecordingTimer(0);
-    timerRef.current = setInterval(() => {
-      setRecordingTimer(prev => prev + 1);
-    }, 1000);
+    timerRef.current = setInterval(() => setRecordingTimer(prev => prev + 1), 1000);
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    if (recognitionRef.current) recognitionRef.current.stop();
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
     setRecordingTimer(0);
@@ -129,18 +147,18 @@ export default function VoiceOrder() {
 
   const checkAnswer = (spokenText: string) => {
     if (!currentExpression) return;
-    const spoken = spokenText.toLowerCase().replace(/[.,!?]/g, "").trim();
-    const target = currentExpression.expression.toLowerCase().replace(/[.,!?]/g, "").trim();
+    const spoken = spokenText.toLowerCase().replace(/[.,!?']/g, "").trim();
+    const target = currentExpression.expression.toLowerCase().replace(/[.,!?']/g, "").trim();
 
     setTotalAttempts(prev => prev + 1);
 
-    // Flexible matching: check if key words match
+    // Flexible matching
     const spokenWords = spoken.split(/\s+/);
     const targetWords = target.split(/\s+/);
     const matchCount = targetWords.filter(w => spokenWords.includes(w)).length;
     const matchRatio = matchCount / targetWords.length;
 
-    if (matchRatio >= 0.7 || spoken === target) {
+    if (matchRatio >= 0.65 || spoken === target) {
       setScore(prev => prev + 1);
       setShowResult("correct");
     } else {
@@ -151,6 +169,17 @@ export default function VoiceOrder() {
   const handleNext = () => {
     if (currentIndex + 1 >= filteredExpressions.length) {
       setGameOver(true);
+      // Save score
+      if (studentName && difficulty) {
+        saveScoreMutation.mutate({
+          studentName,
+          gameType: "voice_order",
+          difficulty,
+          score,
+          totalQuestions: totalAttempts,
+          language: lang,
+        });
+      }
     } else {
       setCurrentIndex(prev => prev + 1);
       setTranscript("");
@@ -168,9 +197,6 @@ export default function VoiceOrder() {
     setShowResult(null);
   };
 
-  const waiterImg = isEnglish ? GABI_ENGLISH : CRIS_SPANISH;
-  const waiterName = isEnglish ? "Gabi" : "Cris";
-
   // ===== DIFFICULTY SELECTION =====
   if (!difficulty) {
     return (
@@ -180,15 +206,15 @@ export default function VoiceOrder() {
             onClick={() => navigate(`/?lang=${lang}`)}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {isEnglish ? "Back" : "Volver"}
           </button>
 
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-3 border-2 border-primary/30 shadow-lg">
+            <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 border-2 border-primary/30 shadow-lg">
               <img src={waiterImg} alt={waiterName} className="w-full h-full object-cover" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
-              🎤 {isEnglish ? "Voice Order" : "Pedido por Voz"}
+              {isEnglish ? "Voice Order" : "Pedido por Voz"}
             </h1>
             <p className="text-sm text-muted-foreground">
               {isEnglish
@@ -203,8 +229,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("easy")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                  <Eye className="w-6 h-6 text-green-600" />
+                <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                  <Eye className="w-7 h-7 text-green-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -212,8 +238,8 @@ export default function VoiceOrder() {
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     {isEnglish
-                      ? "See the phrase on screen while you record"
-                      : "Ve la frase en pantalla mientras grabas"}
+                      ? "See the phrase on screen while you record your voice"
+                      : "Ve la frase en pantalla mientras grabas tu voz"}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
@@ -225,8 +251,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("medium")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <EyeOff className="w-6 h-6 text-amber-600" />
+                <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <EyeOff className="w-7 h-7 text-amber-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -247,8 +273,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("hard")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                  <Mic className="w-6 h-6 text-red-600" />
+                <div className="w-14 h-14 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                  <Mic className="w-7 h-7 text-red-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -293,7 +319,7 @@ export default function VoiceOrder() {
 
           <Card className="mb-6 border-primary/20">
             <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-2xl font-bold text-primary">{score}/{totalAttempts}</p>
                   <p className="text-xs text-muted-foreground">{isEnglish ? "Correct" : "Correctas"}</p>
@@ -301,6 +327,14 @@ export default function VoiceOrder() {
                 <div>
                   <p className="text-2xl font-bold text-foreground">{percentage}%</p>
                   <p className="text-xs text-muted-foreground">{isEnglish ? "Accuracy" : "Precisión"}</p>
+                </div>
+                <div>
+                  <div className="flex justify-center gap-0.5">
+                    {[1, 2, 3].map(i => (
+                      <Star key={i} className={`w-5 h-5 ${i <= stars ? "text-amber-400 fill-amber-400" : "text-muted-foreground/20"}`} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{isEnglish ? "Rating" : "Nivel"}</p>
                 </div>
               </div>
             </CardContent>
@@ -310,11 +344,14 @@ export default function VoiceOrder() {
             <Button size="lg" className="w-full rounded-xl" onClick={handleRestart}>
               <RotateCcw className="w-4 h-4 mr-2" /> {isEnglish ? "Play Again" : "Jugar de Nuevo"}
             </Button>
-            <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={() => navigate(`/order?lang=${lang}`)}>
-              🍽️ {isEnglish ? "Order from Menu" : "Pedir del Menú"}
+            <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={() => navigate(`/game/leaderboard?lang=${lang}`)}>
+              <Trophy className="w-4 h-4 mr-2" /> {isEnglish ? "Leaderboard" : "Ranking"}
             </Button>
-            <Button variant="ghost" onClick={() => navigate("/")}>
-              ← {isEnglish ? "Back to Home" : "Volver al Inicio"}
+            <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={() => navigate(`/order?lang=${lang}`)}>
+              {isEnglish ? "Order from Menu" : "Pedir del Menú"}
+            </Button>
+            <Button variant="ghost" onClick={() => navigate(`/?lang=${lang}`)}>
+              {isEnglish ? "Back to Home" : "Volver al Inicio"}
             </Button>
           </div>
         </div>
@@ -352,7 +389,7 @@ export default function VoiceOrder() {
         </div>
 
         {/* Progress */}
-        <div className="w-full h-1.5 bg-muted rounded-full mb-6 overflow-hidden">
+        <div className="w-full h-2 bg-muted rounded-full mb-6 overflow-hidden">
           <motion.div
             className="h-full bg-primary rounded-full"
             animate={{ width: `${((currentIndex + 1) / filteredExpressions.length) * 100}%` }}
@@ -363,17 +400,17 @@ export default function VoiceOrder() {
         <Card className="mb-6 border-primary/20 bg-[var(--organic-cream)]">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-primary/20">
+              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-primary/20 shadow">
                 <img src={waiterImg} alt={waiterName} className="w-full h-full object-cover" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs font-semibold text-primary mb-1">{waiterName}</p>
                 <p className="text-sm text-foreground">
                   {difficulty === "easy"
                     ? isEnglish ? "Read this phrase out loud:" : "Lee esta frase en voz alta:"
                     : difficulty === "medium"
                     ? isEnglish ? "Memorize and say this phrase:" : "Memoriza y di esta frase:"
-                    : isEnglish ? "How would you say this in English?" : "¿Cómo dirías esto en español?"}
+                    : isEnglish ? "How would you say this?" : "¿Cómo dirías esto?"}
                 </p>
               </div>
             </div>
@@ -387,12 +424,26 @@ export default function VoiceOrder() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
+              className="relative"
             >
               <p className="text-xl font-bold text-foreground mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
                 "{currentExpression.expression}"
               </p>
+              <p className="text-xs text-muted-foreground mb-3 italic">
+                {currentExpression.translation}
+              </p>
+              <button
+                onClick={() => speakPhrase(currentExpression.expression)}
+                disabled={isSpeaking}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  isSpeaking ? "bg-primary/20 text-primary animate-pulse" : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                {isSpeaking ? (isEnglish ? "Playing..." : "Reproduciendo...") : (isEnglish ? "Listen" : "Escuchar")}
+              </button>
               {difficulty === "medium" && (
-                <p className="text-xs text-amber-600 animate-pulse">
+                <p className="text-xs text-amber-600 animate-pulse mt-2">
                   {isEnglish ? "Memorize it! Disappearing soon..." : "¡Memorízala! Desaparecerá pronto..."}
                 </p>
               )}
@@ -425,24 +476,27 @@ export default function VoiceOrder() {
         {/* Recording area */}
         <div className="text-center mb-6">
           <motion.button
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.9 }}
             onClick={isRecording ? stopRecording : startRecording}
             disabled={!!showResult}
-            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 transition-all ${
+            className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3 transition-all ${
               isRecording
-                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse"
+                ? "bg-red-500 text-white shadow-lg shadow-red-500/40 animate-pulse"
                 : showResult
                 ? "bg-muted text-muted-foreground"
-                : "bg-primary text-primary-foreground shadow-lg hover:shadow-xl"
+                : "bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-105"
             }`}
           >
-            {isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+            {isRecording ? <MicOff className="w-10 h-10" /> : <Mic className="w-10 h-10" />}
           </motion.button>
 
           {isRecording && (
-            <p className="text-sm text-red-500 font-medium animate-pulse">
-              {isEnglish ? `Recording... ${recordingTimer}s` : `Grabando... ${recordingTimer}s`}
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <p className="text-sm text-red-500 font-medium">
+                {isEnglish ? `Recording... ${recordingTimer}s` : `Grabando... ${recordingTimer}s`}
+              </p>
+            </div>
           )}
 
           {!isRecording && !transcript && !showResult && (
@@ -452,50 +506,49 @@ export default function VoiceOrder() {
           )}
         </div>
 
-        {/* Transcript */}
-        {transcript && (
-          <Card className={`mb-4 ${
-            showResult === "correct" ? "border-green-300 bg-green-50" :
-            showResult === "wrong" ? "border-red-300 bg-red-50" :
-            "border-border"
-          }`}>
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">
-                {isEnglish ? "You said:" : "Dijiste:"}
-              </p>
-              <p className="text-base font-medium text-foreground">"{transcript}"</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Result feedback */}
+        {/* Transcript & Result */}
         <AnimatePresence>
-          {showResult && (
+          {transcript && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-xl mb-4 text-center ${
-                showResult === "correct" ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"
-              }`}
             >
-              {showResult === "correct" ? (
-                <>
-                  <Sparkles className="w-6 h-6 text-green-500 mx-auto mb-1" />
-                  <p className="font-semibold text-green-700 text-sm">
-                    {isEnglish ? "Great pronunciation!" : "¡Gran pronunciación!"}
+              <Card className={`mb-4 ${
+                showResult === "correct" ? "border-green-400 bg-green-50" :
+                showResult === "wrong" ? "border-red-400 bg-red-50" :
+                "border-border"
+              }`}>
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {isEnglish ? "You said:" : "Dijiste:"}
                   </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold text-red-700 text-sm mb-1">
-                    {isEnglish ? "Almost there!" : "¡Casi!"}
-                  </p>
-                  <p className="text-xs text-red-600">
-                    {isEnglish ? "Correct: " : "Correcto: "}
-                    <strong>"{currentExpression.expression}"</strong>
-                  </p>
-                </>
-              )}
+                  <p className="text-base font-medium text-foreground mb-3">"{transcript}"</p>
+
+                  {showResult === "correct" && (
+                    <div className="flex items-center justify-center gap-2 text-green-600">
+                      <Sparkles className="w-5 h-5" />
+                      <p className="font-semibold text-sm">
+                        {isEnglish ? "Excellent pronunciation!" : "¡Excelente pronunciación!"}
+                      </p>
+                    </div>
+                  )}
+
+                  {showResult === "wrong" && (
+                    <div>
+                      <p className="font-semibold text-red-600 text-sm mb-1">
+                        {isEnglish ? "Almost there! Try to say:" : "¡Casi! Intenta decir:"}
+                      </p>
+                      <p className="text-sm text-red-700 font-medium">"{currentExpression.expression}"</p>
+                      <button
+                        onClick={() => speakPhrase(currentExpression.expression)}
+                        className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                      >
+                        <Volume2 className="w-3 h-3" /> {isEnglish ? "Hear correct" : "Escuchar correcto"}
+                      </button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>

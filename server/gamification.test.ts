@@ -230,4 +230,38 @@ describe("game routes", () => {
     expect(Array.isArray(scores)).toBe(true);
     expect(scores.length).toBeGreaterThan(0);
   });
+
+  it("retrieves leaderboard", async () => {
+    const { ctx } = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // Save some scores first
+    await caller.game.saveScore({
+      studentName: "Leader 1",
+      gameType: "phrase_builder",
+      difficulty: "easy",
+      score: 10,
+      totalQuestions: 10,
+      language: "en",
+    });
+    await caller.game.saveScore({
+      studentName: "Leader 2",
+      gameType: "voice_order",
+      difficulty: "medium",
+      score: 7,
+      totalQuestions: 10,
+      language: "en",
+    });
+
+    const leaderboard = await caller.game.leaderboard({ language: "en" });
+    expect(Array.isArray(leaderboard)).toBe(true);
+    expect(leaderboard.length).toBeGreaterThan(0);
+    if (leaderboard.length > 0) {
+      expect(leaderboard[0]).toHaveProperty("studentName");
+      expect(leaderboard[0]).toHaveProperty("totalScore");
+      expect(leaderboard[0]).toHaveProperty("totalQuestions");
+      expect(leaderboard[0]).toHaveProperty("gamesPlayed");
+      expect(leaderboard[0]).toHaveProperty("bestPercentage");
+    }
+  });
 });
