@@ -84,6 +84,12 @@ export const orders = mysqlTable("orders", {
   status: mysqlEnum("status", ["pending", "preparing", "ready", "delivered", "cancelled"]).default("pending").notNull(),
   totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
+  // Payment fields
+  paymentStatus: mysqlEnum("paymentStatus", ["unpaid", "pending_verification", "paid", "refunded"]).default("unpaid").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  paymentProofUrl: text("paymentProofUrl"),
+  // WhatsApp notification
+  whatsappNotified: boolean("whatsappNotified").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -145,3 +151,16 @@ export const gameScores = mysqlTable("game_scores", {
 
 export type GameScore = typeof gameScores.$inferSelect;
 export type InsertGameScore = typeof gameScores.$inferInsert;
+
+/**
+ * App settings (Pix key, webhook URL, WhatsApp number, etc.)
+ */
+export const appSettings = mysqlTable("app_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 100 }).notNull().unique(),
+  settingValue: text("settingValue"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = typeof appSettings.$inferInsert;

@@ -13,6 +13,7 @@ import PhraseBuilder from "./pages/PhraseBuilder";
 import VoiceOrder from "./pages/VoiceOrder";
 import QASimulation from "./pages/QASimulation";
 import Leaderboard from "./pages/Leaderboard";
+import AdminSettings from "./pages/AdminSettings";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path={"/game/leaderboard"} component={Leaderboard} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/qrcodes"} component={QRCodes} />
+      <Route path={"/admin/settings"} component={AdminSettings} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

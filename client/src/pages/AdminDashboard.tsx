@@ -13,6 +13,7 @@ import {
   Leaf, Clock, ChefHat, CheckCircle2, Truck, XCircle,
   ShoppingCart, DollarSign, TrendingUp, ArrowRight, LogOut,
   RefreshCw, Loader2, QrCode, Bell, BellOff, Trophy, Volume2,
+  CreditCard, ImageIcon, ExternalLink, Settings,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -132,6 +133,14 @@ export default function AdminDashboard() {
     onError: (err) => toast.error(err.message),
   });
 
+  const updatePaymentMutation = trpc.admin.updatePaymentStatus.useMutation({
+    onSuccess: () => {
+      refetchOrders();
+      toast.success("Payment status updated!");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -201,6 +210,9 @@ export default function AdminDashboard() {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/admin/qrcodes")}>
               <QrCode className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/settings")}>
+              <Settings className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => { refetchOrders(); refetchStats(); }}>
               <RefreshCw className="w-4 h-4" />
@@ -314,6 +326,27 @@ export default function AdminDashboard() {
                               </span>
                             </div>
 
+                            {/* Payment Status Badge */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={`text-xs ${
+                                order.paymentStatus === "paid" ? "bg-green-100 text-green-800 border-green-200" :
+                                order.paymentStatus === "pending_verification" ? "bg-amber-100 text-amber-800 border-amber-200" :
+                                "bg-gray-100 text-gray-600 border-gray-200"
+                              }`}>
+                                <CreditCard className="w-3 h-3 mr-1" />
+                                {order.paymentStatus === "paid" ? "Pago ✅" :
+                                 order.paymentStatus === "pending_verification" ? "Comprovante enviado" :
+                                 order.paymentStatus === "refunded" ? "Reembolsado" :
+                                 "Aguardando Pix"}
+                              </Badge>
+                              {order.paymentProofUrl && (
+                                <a href={order.paymentProofUrl} target="_blank" rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                  <ImageIcon className="w-3 h-3" /> Ver comprovante
+                                </a>
+                              )}
+                            </div>
+
                             {/* Items */}
                             <div className="bg-muted/50 rounded-lg p-3 mb-3">
                               {order.items.map((item: any) => (
@@ -329,7 +362,7 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                               {config.next && (
                                 <Button
                                   size="sm"
@@ -345,6 +378,23 @@ export default function AdminDashboard() {
                                   {config.icon}
                                   <span className="ml-1">{config.label}</span>
                                   <ArrowRight className="w-3 h-3 ml-1" />
+                                </Button>
+                              )}
+                              {order.paymentStatus === "pending_verification" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-700 border-green-300 hover:bg-green-50"
+                                  onClick={() =>
+                                    updatePaymentMutation.mutate({
+                                      orderId: order.id,
+                                      paymentStatus: "paid",
+                                    })
+                                  }
+                                  disabled={updatePaymentMutation.isPending}
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Confirmar Pix
                                 </Button>
                               )}
                               {order.status !== "cancelled" && order.status !== "delivered" && (

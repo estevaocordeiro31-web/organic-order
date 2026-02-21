@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import {
   Leaf, ShoppingCart, Plus, Minus, Trash2, ArrowLeft,
   Coffee, CupSoda, Sandwich, Beef, Salad, UtensilsCrossed,
   IceCreamCone, GlassWater, Croissant, ChevronRight, Send, Citrus,
+  CreditCard, Upload, CheckCircle2, Loader2, Camera,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -43,7 +44,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "setup" | "menu" | "cart" | "done";
+type Step = "setup" | "menu" | "cart" | "done" | "payment";
 
 // Pick a random waiter for the session
 function pickWaiter(lang: "en" | "es") {
@@ -86,16 +87,57 @@ export default function OrderPage() {
   const { data: allItems } = trpc.menu.items.useQuery();
   const { data: tables } = trpc.menu.tables.useQuery();
 
+  const [paymentProofSent, setPaymentProofSent] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: pixInfo } = trpc.order.pixInfo.useQuery();
+
   const createOrderMutation = trpc.order.create.useMutation({
     onSuccess: (data) => {
       setOrderId(data.orderId);
-      setStep("done");
+      setStep("payment");
       toast.success(t(lang, "Order placed successfully!", "¡Pedido realizado con éxito!"));
     },
     onError: (err) => {
       toast.error(t(lang, "Failed to place order: ", "Error al hacer el pedido: ") + err.message);
     },
   });
+
+  const uploadProofMutation = trpc.order.uploadPaymentProof.useMutation({
+    onSuccess: () => {
+      setPaymentProofSent(true);
+      toast.success(t(lang, "Payment proof sent! We'll verify it shortly.", "¡Comprobante enviado! Lo verificaremos pronto."));
+    },
+    onError: (err: any) => {
+      toast.error(t(lang, "Failed to upload proof: ", "Error al enviar comprobante: ") + err.message);
+    },
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !orderId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t(lang, "File too large. Max 5MB.", "Archivo muy grande. Máx 5MB."));
+      return;
+    }
+    setUploadingProof(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(",")[1];
+        uploadProofMutation.mutate({
+          orderId,
+          imageBase64: base64,
+          mimeType: file.type || "image/jpeg",
+        });
+        setUploadingProof(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploadingProof(false);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     if (!allItems) return [];
@@ -598,6 +640,149 @@ export default function OrderPage() {
     );
   }
 
+  // ===== STEP: PAYMENT (PIX) =====
+  if (step === "payment") {
+    const pixKeyDisplay = pixInfo?.pixKey || "(chave não configurada)";
+    const totalFormatted = `R$ ${cartTotal.toFixed(2)}`;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[var(--organic-light)] via-background to-background">
+        <div className="container mx-auto px-4 py-8 max-w-lg">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          >
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="w-8 h-8 text-primary" />
+            </div>
+          </motion.div>
+
+          <h1
+            className="text-2xl font-bold text-foreground mb-2 text-center"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            {t(lang, "Payment via Pix", "Pago por Pix")}
+          </h1>
+          <p className="text-center text-muted-foreground mb-6 text-sm">
+            {t(lang,
+              `Order #${orderId} · Total: ${totalFormatted}`,
+              `Pedido #${orderId} · Total: ${totalFormatted}`
+            )}
+          </p>
+
+          {/* Pix Key Card */}
+          <Card className="mb-4 border-primary/20">
+            <CardContent className="p-5">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
+                  {t(lang, "Pix Key", "Chave Pix")}
+                </p>
+                <p className="text-lg font-mono font-bold text-foreground mb-3 break-all select-all">
+                  {pixKeyDisplay}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => {
+                    navigator.clipboard.writeText(pixKeyDisplay);
+                    toast.success(t(lang, "Pix key copied!", "¡Clave Pix copiada!"));
+                  }}
+                >
+                  {t(lang, "Copy Pix Key", "Copiar Chave Pix")}
+                </Button>
+              </div>
+              <Separator className="my-4" />
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t(lang, "Amount to pay", "Valor a pagar")}
+                </p>
+                <p className="text-3xl font-bold text-primary">{totalFormatted}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {pixInfo?.pixName || "Organic In The Box"} · {pixInfo?.pixCity || "Jundiaí"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Instructions */}
+          <Card className="mb-4 bg-amber-50 border-amber-200">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-amber-800 mb-2">
+                {t(lang, "How to pay:", "Cómo pagar:")}
+              </p>
+              <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
+                <li>{t(lang, "Open your bank app", "Abre tu app del banco")}</li>
+                <li>{t(lang, "Go to Pix → Pay with Pix Key", "Ve a Pix → Pagar con Chave Pix")}</li>
+                <li>{t(lang, "Paste the key above and enter the amount", "Pega la chave y ingresa el valor")}</li>
+                <li>{t(lang, "Take a screenshot of the receipt", "Toma una captura del comprobante")}</li>
+                <li>{t(lang, "Upload the receipt below", "Sube el comprobante abajo")}</li>
+              </ol>
+            </CardContent>
+          </Card>
+
+          {/* Upload Proof */}
+          {!paymentProofSent ? (
+            <Card className="mb-4 border-primary/20">
+              <CardContent className="p-5 text-center">
+                <Upload className="w-10 h-10 text-primary/50 mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground mb-3">
+                  {t(lang, "Upload your payment receipt", "Sube tu comprobante de pago")}
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingProof || uploadProofMutation.isPending}
+                    className="rounded-xl"
+                  >
+                    {uploadingProof || uploadProofMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {t(lang, "Uploading...", "Subiendo...")}</>
+                    ) : (
+                      <><Camera className="w-4 h-4 mr-2" /> {t(lang, "Choose Photo", "Elegir Foto")}</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-4 border-green-200 bg-green-50">
+              <CardContent className="p-5 text-center">
+                <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-2" />
+                <p className="text-sm font-medium text-green-800">
+                  {t(lang, "Receipt sent! We'll verify it shortly.", "¡Comprobante enviado! Lo verificaremos pronto.")}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Continue without proof */}
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full rounded-xl"
+              onClick={() => setStep("done")}
+            >
+              {paymentProofSent
+                ? t(lang, "Continue", "Continuar")
+                : t(lang, "I'll pay at the counter", "Pagaré en el mostrador")
+              }
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ===== STEP: DONE =====
   if (step === "done") {
     return (
@@ -628,6 +813,15 @@ export default function OrderPage() {
             )}
           </p>
 
+          {paymentProofSent && (
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Badge className="bg-green-100 text-green-800 border-green-200">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                {t(lang, "Payment proof sent", "Comprobante enviado")}
+              </Badge>
+            </div>
+          )}
+
           <Card className="mb-6 border-primary/20 bg-[var(--organic-cream)]">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
@@ -649,7 +843,7 @@ export default function OrderPage() {
 
           <div className="bg-muted rounded-xl p-4 mb-6 text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">
-              {t(lang, "🎓 Great job practicing!", "🎓 ¡Excelente práctica!")}
+              {t(lang, "Great job practicing!", "¡Excelente práctica!")}
             </p>
             <p>
               {t(lang,
@@ -666,6 +860,7 @@ export default function OrderPage() {
               className="w-full rounded-xl"
               onClick={() => {
                 setCart([]);
+                setPaymentProofSent(false);
                 setStep("menu");
               }}
             >

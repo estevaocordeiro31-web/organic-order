@@ -71,3 +71,36 @@
 - [x] Notificações sonoras no painel admin quando novo pedido chegar
 - [x] Polling automático de pedidos no admin dashboard
 - [x] Indicador visual de novos pedidos (badge/contador)
+
+## v6 - Relatório de Progresso, Happy Hour e Pagamento Stripe
+- [ ] Página de relatório de progresso por aluno (para professores)
+- [ ] Filtros por aluno, período, tipo de jogo e idioma
+- [ ] Gráficos de evolução (acertos ao longo do tempo)
+- [ ] Detalhamento por atividade (expressões mais praticadas, dificuldades)
+- [ ] Exportar relatório (visualização)
+- [ ] Sistema de promoções Happy Hour no cardápio
+- [ ] Tabela de promoções no banco de dados (horário início/fim, desconto, itens)
+- [ ] Painel admin para criar/editar promoções
+- [ ] Exibição de promoções ativas no cardápio do aluno
+- [ ] Badge visual de promoção nos itens com desconto
+- [ ] Integração Stripe para pagamento
+- [ ] Setup Stripe (webdev_add_feature)
+- [ ] Checkout após confirmação do pedido
+- [ ] Webhook de confirmação de pagamento
+- [ ] Status de pagamento no painel admin
+
+## v6.1 - Melhorias no Vídeo de Boas-Vindas
+- [x] Gerar novas imagens Disney-Pixar sem distorção para o vídeo (10 cenas)
+- [x] Expandir roteiro: falar mais sobre o conceito do Organic (100% saudável)
+- [x] Expandir roteiro: enfatizar que alunos praticam idioma enquanto pedem comida real
+- [x] Mais cenas para transição Ken Burns mais suave (10 cenas vs 7 anterior)
+- [x] Produzir novo vídeo com narração atualizada e legendas duplas (60s)
+- [x] Integrar novo vídeo no app
+
+## v6.2 - Pagamento Pix e Notificação WhatsApp
+- [x] Sistema de pagamento via Pix (QR Code Pix)
+- [x] Upload de comprovante de pagamento pelo aluno
+- [x] Comprovante anexado ao pedido no painel admin
+- [x] Notificação WhatsApp para 11947515284 com dados do pedido
+- [x] Webhook genérico configurável no admin para integração com bot InFlux
+- [x] Mensagem formatada: mesa, aluno, itens, valor, comprovante

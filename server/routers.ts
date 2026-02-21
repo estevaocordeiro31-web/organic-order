@@ -21,8 +21,14 @@ import {
   saveGameScore,
   getStudentScores,
   getLeaderboard,
+  updateOrderPayment,
+  markOrderWhatsappNotified,
+  getSetting,
+  setSetting,
+  getAllSettings,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { storagePut } from "./storage";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -107,6 +113,48 @@ export const appRouter = router({
         if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
         return order;
       }),
+
+    // Upload payment proof (public - student uploads comprovante)
+    uploadPaymentProof: publicProcedure
+      .input(z.object({
+        orderId: z.number(),
+        imageBase64: z.string(),
+        mimeType: z.string().default("image/jpeg"),
+      }))
+      .mutation(async ({ input }) => {
+        // Decode base64 to buffer
+        const buffer = Buffer.from(input.imageBase64, "base64");
+        const ext = input.mimeType.includes("png") ? "png" : "jpg";
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileKey = `payment-proofs/order-${input.orderId}-${randomSuffix}.${ext}`;
+
+        // Upload to S3
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+
+        // Update order with payment proof
+        await updateOrderPayment(input.orderId, {
+          paymentStatus: "pending_verification",
+          paymentMethod: "pix",
+          paymentProofUrl: url,
+        });
+
+        // Send WhatsApp notification
+        try {
+          await sendWhatsAppOrderNotification(input.orderId);
+        } catch (err) {
+          console.error("[WhatsApp] Failed to send notification:", err);
+        }
+
+        return { success: true, proofUrl: url };
+      }),
+
+    // Get Pix payment info
+    pixInfo: publicProcedure.query(async () => {
+      const pixKey = await getSetting("pix_key") || "";
+      const pixName = await getSetting("pix_name") || "Organic In The Box";
+      const pixCity = await getSetting("pix_city") || "Jundiai";
+      return { pixKey, pixName, pixCity };
+    }),
   }),
 
   // ===== EXPRESSIONS & GAMES =====
@@ -180,6 +228,16 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    updatePaymentStatus: adminProcedure
+      .input(z.object({
+        orderId: z.number(),
+        paymentStatus: z.enum(["unpaid", "pending_verification", "paid", "refunded"]),
+      }))
+      .mutation(async ({ input }) => {
+        await updateOrderPayment(input.orderId, { paymentStatus: input.paymentStatus });
+        return { success: true };
+      }),
+
     stats: adminProcedure.query(async () => {
       return getTodayOrderStats();
     }),
@@ -201,7 +259,83 @@ export const appRouter = router({
         await toggleMenuItemAvailability(input.itemId, input.available);
         return { success: true };
       }),
+
+    // Settings management
+    getSettings: adminProcedure.query(async () => {
+      return getAllSettings();
+    }),
+
+    updateSetting: adminProcedure
+      .input(z.object({
+        key: z.string(),
+        value: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        await setSetting(input.key, input.value);
+        return { success: true };
+      }),
   }),
 });
+
+// ===== WHATSAPP NOTIFICATION HELPER =====
+
+async function sendWhatsAppOrderNotification(orderId: number) {
+  const whatsappNumber = await getSetting("whatsapp_number") || "5511947515284";
+  const webhookUrl = await getSetting("webhook_url");
+
+  // Get order details
+  const allOrders = await getOrdersWithItems();
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const tableName = order.table?.label || `Mesa ${order.tableId}`;
+  const itemsList = order.items
+    .map((item: any) => `  ${item.quantity}x ${item.namePt || item.nameEn} - R$ ${(parseFloat(item.unitPrice) * item.quantity).toFixed(2)}`)
+    .join("\n");
+
+  const message = `🍽️ *NOVO PEDIDO #${orderId}*\n\n` +
+    `👤 Aluno: ${order.studentName}\n` +
+    `📍 ${tableName}\n` +
+    `💰 Total: R$ ${parseFloat(order.totalAmount).toFixed(2)}\n\n` +
+    `📋 *Itens:*\n${itemsList}\n\n` +
+    `💳 Pagamento: ${order.paymentStatus === "pending_verification" ? "Comprovante enviado ✅" : "Pendente ⏳"}\n` +
+    (order.paymentProofUrl ? `📎 Comprovante: ${order.paymentProofUrl}\n` : "") +
+    (order.notes ? `📝 Obs: ${order.notes}\n` : "") +
+    `\n⏰ ${new Date().toLocaleTimeString("pt-BR")}`;
+
+  // If webhook URL is configured, send via webhook
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: whatsappNumber,
+          message,
+          orderId,
+          orderData: {
+            studentName: order.studentName,
+            table: tableName,
+            total: order.totalAmount,
+            items: order.items,
+            paymentStatus: order.paymentStatus,
+            paymentProofUrl: order.paymentProofUrl,
+          },
+        }),
+      });
+      await markOrderWhatsappNotified(orderId);
+    } catch (err) {
+      console.error("[Webhook] Failed to send:", err);
+    }
+  }
+
+  // Always notify the owner via Manus notification system
+  await notifyOwner({
+    title: `📱 Pedido #${orderId} - Comprovante Pix`,
+    content: message,
+  });
+
+  await markOrderWhatsappNotified(orderId);
+}
 
 export type AppRouter = typeof appRouter;

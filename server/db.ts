@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -319,6 +319,44 @@ export async function getLeaderboard(gameType?: string, language?: string) {
   return Array.from(studentMap.values())
     .sort((a, b) => b.totalScore - a.totalScore)
     .slice(0, 50);
+}
+
+// ===== PAYMENT & SETTINGS =====
+
+export async function updateOrderPayment(orderId: number, data: {
+  paymentStatus: "unpaid" | "pending_verification" | "paid" | "refunded";
+  paymentMethod?: string;
+  paymentProofUrl?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(orders).set(data).where(eq(orders.id, orderId));
+}
+
+export async function markOrderWhatsappNotified(orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(orders).set({ whatsappNotified: true }).where(eq(orders.id, orderId));
+}
+
+export async function getSetting(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(appSettings).where(eq(appSettings.settingKey, key)).limit(1);
+  return result.length > 0 ? (result[0].settingValue ?? null) : null;
+}
+
+export async function setSetting(key: string, value: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(appSettings).values({ settingKey: key, settingValue: value })
+    .onDuplicateKeyUpdate({ set: { settingValue: value } });
+}
+
+export async function getAllSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(appSettings);
 }
 
 export async function getTodayOrderStats() {

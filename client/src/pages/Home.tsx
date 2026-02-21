@@ -10,7 +10,7 @@ const GABI_ENGLISH = "https://files.manuscdn.com/user_upload_by_module/session_f
 const CRIS_SPANISH = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/vTPizDjRBbaCIUNs.png";
 const GABI_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/fApPdrSumRhOqSuq.png";
 const CRIS_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/AmBZAoHDZrrtPehm.png";
-const WELCOME_VIDEO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/GZqFsREulWdPNSTu.mp4";
+const WELCOME_VIDEO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/nHytYsSKGxPHVVvV.mp4";
 const ORGANIC_EXTERIOR = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/uLeiiFbebxtxkwjH.png";
 
 type HomeStep = "welcome" | "video" | "language" | "ready";
