@@ -104,3 +104,9 @@
 - [x] Notificação WhatsApp para 11947515284 com dados do pedido
 - [x] Webhook genérico configurável no admin para integração com bot InFlux
 - [x] Mensagem formatada: mesa, aluno, itens, valor, comprovante
+
+## v6.3 - Correção de Proporção do Vídeo
+- [x] Investigar problema de proporção/distorção nas imagens do vídeo
+- [x] Corrigir script de geração para manter aspect ratio correto
+- [x] Regenerar vídeo com proporções corretas
+- [x] Integrar vídeo corrigido no app
