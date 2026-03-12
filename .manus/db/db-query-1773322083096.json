@@ -1,0 +1,30 @@
+{
+  "query": "\nUPDATE menu_categories SET restaurantId = 1 WHERE restaurantId = 1;\nUPDATE menu_items SET restaurantId = 1 WHERE restaurantId = 1;\nUPDATE tables SET restaurantId = 1 WHERE restaurantId = 1;\nSELECT id, slug, name FROM restaurants ORDER BY id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute \nUPDATE menu_categories SET restaurantId = 1 WHERE restaurantId = 1;\nUPDATE menu_items SET restaurantId = 1 WHERE restaurantId = 1;\nUPDATE tables SET restaurantId = 1 WHERE restaurantId = 1;\nSELECT id, slug, name FROM restaurants ORDER BY id;\n",
+  "rows": [
+    {
+      "id": "1",
+      "slug": "organic",
+      "name": "Organic In The Box"
+    },
+    {
+      "id": "2",
+      "slug": "topdog",
+      "name": "Top Dog Brasil"
+    },
+    {
+      "id": "3",
+      "slug": "laguapa",
+      "name": "La Guapa"
+    },
+    {
+      "id": "4",
+      "slug": "elpatron",
+      "name": "El Patron"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\tname\n1\torganic\tOrganic In The Box\n2\ttopdog\tTop Dog Brasil\n3\tlaguapa\tLa Guapa\n4\telpatron\tEl Patron\n",
+  "stderr": "",
+  "execution_time_ms": 105
+}

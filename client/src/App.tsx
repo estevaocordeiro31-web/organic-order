@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import ImAIndEntry from "./pages/ImAIndEntry";
 import OrderPage from "./pages/OrderPage";
 import OrderStatus from "./pages/OrderStatus";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -14,11 +15,13 @@ import VoiceOrder from "./pages/VoiceOrder";
 import QASimulation from "./pages/QASimulation";
 import Leaderboard from "./pages/Leaderboard";
 import AdminSettings from "./pages/AdminSettings";
+import RestaurantExperience from "./pages/RestaurantExperience";
 
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"} component={ImAIndEntry} />
+      <Route path={"/organic"} component={Home} />
       <Route path={"/order"} component={OrderPage} />
       <Route path={"/order/status/:id"} component={OrderStatus} />
       <Route path={"/game/phrase-builder"} component={PhraseBuilder} />
@@ -28,6 +31,7 @@ function Router() {
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/qrcodes"} component={QRCodes} />
       <Route path={"/admin/settings"} component={AdminSettings} />
+      <Route path={"/restaurant/:slug"} component={RestaurantExperience} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -19,10 +19,51 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * Restaurants (multi-tenant partners)
+ */
+export const restaurants = mysqlTable("restaurants", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  nameEn: varchar("nameEn", { length: 200 }),
+  nameEs: varchar("nameEs", { length: 200 }),
+  cuisineType: varchar("cuisineType", { length: 100 }),
+  tagline: text("tagline"),
+  address: varchar("address", { length: 300 }),
+  themeColor: varchar("themeColor", { length: 20 }).default("#1a2e1a"),
+  accentColor: varchar("accentColor", { length: 20 }).default("#4ade80"),
+  logoUrl: text("logoUrl"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Restaurant = typeof restaurants.$inferSelect;
+export type InsertRestaurant = typeof restaurants.$inferInsert;
+
+/**
+ * Restaurant staff / characters
+ */
+export const restaurantStaff = mysqlTable("restaurant_staff", {
+  id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  role: varchar("role", { length: 100 }),
+  characterName: varchar("characterName", { length: 100 }),
+  avatarUrl: text("avatarUrl"),
+  language: mysqlEnum("language", ["en", "es"]).default("en").notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RestaurantStaff = typeof restaurantStaff.$inferSelect;
+export type InsertRestaurantStaff = typeof restaurantStaff.$inferInsert;
+
+/**
  * Menu categories (Coffees, Toasts, Salads, etc.)
  */
 export const menuCategories = mysqlTable("menu_categories", {
   id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").default(1).notNull(),
   nameEn: varchar("nameEn", { length: 100 }).notNull(),
   namePt: varchar("namePt", { length: 100 }).notNull(),
   nameEs: varchar("nameEs", { length: 100 }),
@@ -41,6 +82,7 @@ export type InsertMenuCategory = typeof menuCategories.$inferInsert;
  */
 export const menuItems = mysqlTable("menu_items", {
   id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").default(1).notNull(),
   categoryId: int("categoryId").notNull(),
   nameEn: varchar("nameEn", { length: 200 }).notNull(),
   namePt: varchar("namePt", { length: 200 }).notNull(),
@@ -65,7 +107,8 @@ export type InsertMenuItem = typeof menuItems.$inferInsert;
  */
 export const tables = mysqlTable("tables", {
   id: int("id").autoincrement().primaryKey(),
-  number: int("number").notNull().unique(),
+  restaurantId: int("restaurantId").default(1).notNull(),
+  number: int("number").notNull(),
   label: varchar("label", { length: 50 }).notNull(),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -79,6 +122,7 @@ export type InsertTable = typeof tables.$inferInsert;
  */
 export const orders = mysqlTable("orders", {
   id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").default(1).notNull(),
   tableId: int("tableId").notNull(),
   studentName: varchar("studentName", { length: 200 }).notNull(),
   status: mysqlEnum("status", ["pending", "preparing", "ready", "delivered", "cancelled"]).default("pending").notNull(),
@@ -139,6 +183,7 @@ export type InsertOrderingExpression = typeof orderingExpressions.$inferInsert;
  */
 export const gameScores = mysqlTable("game_scores", {
   id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").default(1).notNull(),
   studentName: varchar("studentName", { length: 200 }).notNull(),
   tableId: int("tableId"),
   gameType: mysqlEnum("gameType", ["voice_order", "phrase_builder", "qa_simulation"]).notNull(),

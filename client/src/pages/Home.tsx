@@ -48,8 +48,14 @@ function OrganicLogo({ size = "lg" }: { size?: "sm" | "md" | "lg" }) {
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const [step, setStep] = useState<HomeStep>("welcome");
-  const [selectedLang, setSelectedLang] = useState<"en" | "es" | null>(null);
+  // Read lang/voice from URL if coming from ImAInd entry
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLang = urlParams.get("lang") as "en" | "es" | null;
+  const urlVoice = urlParams.get("voice") === "1";
+  // If lang is in URL, skip welcome/video and go straight to language selection or ready
+  const initialStep: HomeStep = urlLang ? "ready" : "welcome";
+  const [step, setStep] = useState<HomeStep>(initialStep);
+  const [selectedLang, setSelectedLang] = useState<"en" | "es" | null>(urlLang);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // ===== STEP 1: WELCOME =====

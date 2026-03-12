@@ -110,3 +110,41 @@
 - [x] Corrigir script de geração para manter aspect ratio correto
 - [x] Regenerar vídeo com proporções corretas
 - [x] Integrar vídeo corrigido no app
+
+## v7 - ImAInd Restaurant Experience (Transformação Multi-Tenant)
+
+### Identidade Visual ImAInd
+- [x] Criar logo ImAInd (futurista, cosmopolita, IA + gastronomia)
+- [x] Definir paleta de cores e tipografia da marca ImAInd (azul marinho, elétrico, dourado)
+- [x] Criar tela de splash com logo ImAInd animada
+
+### Tela de Entrada Imersiva
+- [x] Tela de boas-vindas: "Você está pronto para se divertir simulando estar em um restaurante em outra parte do mundo?"
+- [x] Botão "Assumir controle de voz" → ativa modo voz
+- [x] Botão "Continuar" → modo texto/clique
+- [x] Seleção de idioma: Inglês 🇺🇸 ou Espanhol 🇪🇸
+
+### Seleção de Parceiros
+- [x] Tela de seleção com 4 cards visuais dos restaurantes
+- [x] Card Organic In The Box (verde, saudável, Jundiaí)
+- [x] Card Top Dog Brasil (preto/vermelho, hot dogs prensados, Rua do Retiro 1276)
+- [x] Card La Guapa (bege/dourado, empanadas argentinas, Rua do Retiro 848)
+- [x] Card El Patron (vermelho escuro/dourado, mexicano, Rua do Retiro 1222)
+
+### Schema Multi-Tenant (Banco de Dados)
+- [x] Tabela `restaurants` (id, slug, name, cuisine_type, theme_color, logo_url, address)
+- [x] Tabela `restaurant_staff` (id, restaurant_id, name, role, avatar_url)
+- [x] Migrar tabelas existentes para incluir restaurant_id
+- [x] Seed: inserir os 4 restaurantes com dados reais
+- [ ] Seed: cardápios em EN/ES para Top Dog, La Guapa e El Patron
+
+### Dashboards Isolados por Parceiro
+- [ ] Cada parceiro vê apenas seus pedidos (filtro por restaurant_id)
+- [ ] QR Code por mesa por restaurante
+- [ ] Painel admin master (Estevão) vê todos os restaurantes
+- [ ] Login do parceiro associado ao restaurant_id
+
+### Cardápios Traduzidos (EN/ES)
+- [ ] Top Dog Brasil: traduzir cardápio completo para inglês e espanhol
+- [ ] La Guapa: traduzir cardápio completo para inglês e espanhol
+- [ ] El Patron: traduzir cardápio para inglês (já tem nomes em espanhol)
