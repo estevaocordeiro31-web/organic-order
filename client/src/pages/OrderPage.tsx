@@ -311,7 +311,7 @@ export default function OrderPage() {
               </button>
               <div className="text-center">
                 <h1 className="font-semibold text-foreground text-sm">
-                  Organic In The Box {waiter.flag}
+                  ImAInd Restaurant Experience {waiter.flag}
                 </h1>
                 <p className="text-xs text-muted-foreground">
                   {t(lang, "Table", "Mesa")} {tables?.find((t) => t.id === tableId)?.number} · {studentName}
@@ -700,7 +700,7 @@ export default function OrderPage() {
                 </p>
                 <p className="text-3xl font-bold text-primary">{totalFormatted}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {pixInfo?.pixName || "Organic In The Box"} · {pixInfo?.pixCity || "Jundiaí"}
+                  {pixInfo?.pixName || "ImAInd"} · {pixInfo?.pixCity || "Jundiaí"}
                 </p>
               </div>
             </CardContent>

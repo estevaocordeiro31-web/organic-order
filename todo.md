@@ -247,3 +247,10 @@
 - [ ] Integrar tela de feedback no final do Organic, Top Dog, La Guapa, El Patron, Cabana
 - [ ] Mensagem personalizada por idioma (EN/ES/PT)
 - [ ] Backend: tabela leads com dados completos
+
+## v13 - Renomear App para ImAInd
+
+- [x] Atualizar VITE_APP_TITLE para "ImAInd Restaurant Experience"
+- [x] Atualizar título na aba do browser (index.html)
+- [x] Manter "Organic In The Box" apenas dentro da experiência do parceiro Organic
+- [x] Verificar e remover referências ao nome antigo em meta tags e manifest

@@ -119,7 +119,7 @@ export default function AdminSettings() {
                 <Input
                   value={pixName}
                   onChange={(e) => setPixName(e.target.value)}
-                  placeholder="Organic In The Box"
+                  placeholder="ImAInd Restaurant Experience"
                 />
                 <Button size="sm" onClick={() => saveSetting("pix_name", pixName)} disabled={updateSettingMutation.isPending}>
                   <Save className="w-4 h-4" />

@@ -210,7 +210,7 @@ export default function RestaurantExperience() {
             className="border-white/20 text-white/60 hover:text-white hover:bg-white/10 bg-transparent"
             onClick={() => navigate(`/organic?lang=${lang}&voice=${voiceMode ? "1" : "0"}`)}
           >
-            🥑 Try Organic In The Box instead
+            🥑 Try Organic In The Box
           </Button>
           <p className="text-white/25 text-xs">
             {lang === "en" ? "Organic is fully available now!" : "¡Organic está disponible ahora!"}

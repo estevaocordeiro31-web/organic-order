@@ -104,6 +104,7 @@ export default function QRCodes() {
                     <span className="text-xs font-medium text-primary print:text-black uppercase tracking-wider">
                       Organic In The Box
                     </span>
+                    {/* Note: This QR page is specific to the Organic partner */}
                   </div>
 
                   <div className="bg-white p-2 rounded-lg inline-block mb-2">

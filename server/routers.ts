@@ -264,7 +264,7 @@ export const appRouter = router({
     // Get Pix payment info
     pixInfo: publicProcedure.query(async () => {
       const pixKey = await getSetting("pix_key") || "";
-      const pixName = await getSetting("pix_name") || "Organic In The Box";
+      const pixName = await getSetting("pix_name") || "ImAInd";
       const pixCity = await getSetting("pix_city") || "Jundiai";
       return { pixKey, pixName, pixCity };
     }),

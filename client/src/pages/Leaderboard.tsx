@@ -61,7 +61,7 @@ export default function Leaderboard() {
             {isEnglish ? "Leaderboard" : "Ranking"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isEnglish ? "Top students at Organic In The Box" : "Mejores estudiantes en Organic In The Box"}
+            {isEnglish ? "Top students at ImAInd" : "Mejores estudiantes en ImAInd"}
           </p>
         </div>
 
