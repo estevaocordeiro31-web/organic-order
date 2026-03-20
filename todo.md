@@ -254,3 +254,20 @@
 - [x] Atualizar título na aba do browser (index.html)
 - [x] Manter "Organic In The Box" apenas dentro da experiência do parceiro Organic
 - [x] Verificar e remover referências ao nome antigo em meta tags e manifest
+
+## v14 - Consultores Configuráveis por Parceiro
+
+- [x] Adicionar tabela `partner_consultants` no schema (restaurantId, name, role, avatarUrl, whatsappNumber, active, sortOrder)
+- [x] Migrar banco com pnpm db:push
+- [x] Seed: inserir Lucas e Vicky como consultores padrão para todos os parceiros
+- [x] Procedure tRPC: listar consultores por restaurante (público)
+- [x] Procedure tRPC: CRUD de consultores (apenas parceiro autenticado do próprio restaurante)
+- [x] Procedure tRPC: upload de foto do consultor via S3
+- [x] UI: aba "Consultores" no PartnerDashboard com lista de consultores
+- [x] UI: formulário para adicionar/editar consultor (nome, cargo, WhatsApp, foto)
+- [x] UI: upload de foto com preview
+- [x] UI: toggle ativar/desativar consultor
+- [x] UI: reordenar consultores (drag or up/down arrows)
+- [x] Integrar consultores do banco no ExperienceFeedback (substituir hardcoded Lucas/Vicky)
+- [x] Fallback: se nenhum consultor configurado, usar Lucas e Vicky padrão
+- [x] Testes vitest para as novas procedures

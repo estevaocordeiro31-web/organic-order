@@ -33,6 +33,12 @@ import {
   getOrdersByRestaurant,
   getRestaurantStats,
   getAllRestaurantsWithStats,
+  getConsultantsByRestaurant,
+  getAllConsultantsByRestaurant,
+  createConsultant,
+  updateConsultant,
+  deleteConsultant,
+  getConsultantById,
 } from "./db";
 import * as crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -461,6 +467,109 @@ export const appRouter = router({
       const partner = (ctx as any).partner;
       return getRestaurantStats(partner.restaurantId);
     }),
+  }),
+
+  // ===== CONSULTANT ROUTES =====
+  consultants: router({
+    // Public: get active consultants for a restaurant (used in ExperienceFeedback)
+    byRestaurant: publicProcedure
+      .input(z.object({ restaurantId: z.number() }))
+      .query(async ({ input }) => {
+        return getConsultantsByRestaurant(input.restaurantId);
+      }),
+
+    // Partner: get all consultants (including inactive) for management
+    list: partnerProcedure
+      .query(async ({ ctx }) => {
+        const partner = (ctx as any).partner;
+        return getAllConsultantsByRestaurant(partner.restaurantId);
+      }),
+
+    // Partner: add a new consultant
+    create: partnerProcedure
+      .input(z.object({
+        name: z.string().min(1).max(100),
+        role: z.string().max(150).optional(),
+        roleEs: z.string().max(150).optional(),
+        whatsappNumber: z.string().min(8).max(30),
+        avatarUrl: z.string().url().nullable().optional(),
+        sortOrder: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        const id = await createConsultant({
+          restaurantId: partner.restaurantId,
+          name: input.name,
+          role: input.role ?? null,
+          roleEs: input.roleEs ?? null,
+          whatsappNumber: input.whatsappNumber,
+          avatarUrl: input.avatarUrl ?? null,
+          active: true,
+          sortOrder: input.sortOrder ?? 0,
+        });
+        return { id };
+      }),
+
+    // Partner: update a consultant
+    update: partnerProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(100).optional(),
+        role: z.string().max(150).optional(),
+        roleEs: z.string().max(150).optional(),
+        whatsappNumber: z.string().min(8).max(30).optional(),
+        avatarUrl: z.string().url().nullable().optional(),
+        active: z.boolean().optional(),
+        sortOrder: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        // Verify consultant belongs to this restaurant
+        const consultant = await getConsultantById(input.id);
+        if (!consultant || (partner.role !== "master" && consultant.restaurantId !== partner.restaurantId)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Consultant not found in your restaurant" });
+        }
+        const { id, ...data } = input;
+        await updateConsultant(id, data);
+        return { success: true };
+      }),
+
+    // Partner: delete a consultant
+    delete: partnerProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        const consultant = await getConsultantById(input.id);
+        if (!consultant || (partner.role !== "master" && consultant.restaurantId !== partner.restaurantId)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Consultant not found in your restaurant" });
+        }
+        await deleteConsultant(input.id);
+        return { success: true };
+      }),
+
+    // Partner: upload avatar photo
+    uploadAvatar: partnerProcedure
+      .input(z.object({
+        consultantId: z.number().optional(),
+        imageBase64: z.string(),
+        mimeType: z.string().default("image/jpeg"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        const buffer = Buffer.from(input.imageBase64, "base64");
+        const ext = input.mimeType.includes("png") ? "png" : "jpg";
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileKey = `consultant-avatars/r${partner.restaurantId}-${randomSuffix}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        // If consultantId provided, update the record immediately
+        if (input.consultantId) {
+          const consultant = await getConsultantById(input.consultantId);
+          if (consultant && (partner.role === "master" || consultant.restaurantId === partner.restaurantId)) {
+            await updateConsultant(input.consultantId, { avatarUrl: url });
+          }
+        }
+        return { url };
+      }),
   }),
 
   // ===== MASTER ROUTES (Estevão - sees all restaurants) =====

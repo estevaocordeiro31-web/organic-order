@@ -247,3 +247,25 @@ export const leads = mysqlTable("leads", {
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
+
+/**
+ * Partner consultants - configurable per restaurant
+ * Each partner can set their own consultants (name, role, photo, WhatsApp)
+ * that appear in the ExperienceFeedback screen instead of the default Lucas & Vicky
+ */
+export const partnerConsultants = mysqlTable("partner_consultants", {
+  id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  role: varchar("role", { length: 150 }),
+  roleEs: varchar("roleEs", { length: 150 }),
+  avatarUrl: text("avatarUrl"),
+  whatsappNumber: varchar("whatsappNumber", { length: 30 }).notNull(),
+  active: boolean("active").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PartnerConsultant = typeof partnerConsultants.$inferSelect;
+export type InsertPartnerConsultant = typeof partnerConsultants.$inferInsert;

@@ -3,12 +3,29 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const LUCAS_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/influx-lucas-consultant-g9fd7RPJUHhgoPJyPDRJDS.webp";
-const VICKY_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/influx-vicky-consultant-Ujbvg8zLJogtAb3Qg8QqFk.webp";
-
-// WhatsApp numbers for Lucas and Vicky (inFlux consultants)
-const LUCAS_WHATSAPP = "5511947515284"; // Estevão's number as placeholder - update when real numbers available
-const VICKY_WHATSAPP = "5511947515284";
+// Fallback consultants used only when no consultants are configured in the database
+const FALLBACK_CONSULTANTS = [
+  {
+    id: -1,
+    name: "Lucas",
+    role: "American English Specialist",
+    roleEs: "Especialista en Inglés Americano",
+    avatarUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/influx-lucas-consultant-g9fd7RPJUHhgoPJyPDRJDS.webp",
+    whatsappNumber: "5511947515284",
+    active: true,
+    sortOrder: 0,
+  },
+  {
+    id: -2,
+    name: "Vicky",
+    role: "Language Consultant",
+    roleEs: "Consultora de Idiomas",
+    avatarUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/influx-vicky-consultant-Ujbvg8zLJogtAb3Qg8QqFk.webp",
+    whatsappNumber: "5511947515284",
+    active: true,
+    sortOrder: 1,
+  },
+];
 
 interface ExperienceFeedbackProps {
   restaurantName: string;
@@ -31,19 +48,14 @@ const content = {
     interestTitle: "Want to take this even further?",
     interestText: "At inFlux, we make learning a second language the most exciting thing in your life. Our method is unique — you'll be speaking confidently in real situations faster than you think.",
     meetTeam: "Meet our consultants — they'll show you how:",
-    lucasTitle: "Lucas",
-    lucasSub: "American English Specialist",
-    vickyTitle: "Vicky",
-    vickySub: "Language Consultant",
-    chatLucas: "Chat with Lucas",
-    chatVicky: "Chat with Vicky",
+    chatWith: "Chat with",
     formTitle: "Leave your contact and we'll reach out!",
     namePlaceholder: "Your name",
     phonePlaceholder: "Your WhatsApp number",
     submit: "Connect me now!",
     noThanks: "Maybe later",
     thankYouTitle: "You're all set!",
-    thankYouText: "Lucas or Vicky will reach out to you on WhatsApp very soon. Get ready for an amazing journey!",
+    thankYouText: "Our consultant will reach out to you on WhatsApp very soon. Get ready for an amazing journey!",
     close: "Close",
     noThanksTitle: "No problem!",
     noThanksText: "Whenever you're ready, we'll be here. Come back and play anytime!",
@@ -59,24 +71,27 @@ const content = {
     interestTitle: "¿Quieres ir aún más lejos?",
     interestText: "En inFlux, hacemos que aprender un segundo idioma sea lo más emocionante de tu vida. Nuestro método es único — hablarás con confianza en situaciones reales más rápido de lo que imaginas.",
     meetTeam: "Conoce a nuestros consultores — ellos te mostrarán cómo:",
-    lucasTitle: "Lucas",
-    lucasSub: "Especialista en Inglés Americano",
-    vickyTitle: "Vicky",
-    vickySub: "Consultora de Idiomas",
-    chatLucas: "Hablar con Lucas",
-    chatVicky: "Hablar con Vicky",
+    chatWith: "Hablar con",
     formTitle: "¡Deja tu contacto y te llamamos!",
     namePlaceholder: "Tu nombre",
     phonePlaceholder: "Tu número de WhatsApp",
     submit: "¡Conéctame ahora!",
     noThanks: "Quizás después",
     thankYouTitle: "¡Listo!",
-    thankYouText: "Lucas o Vicky te contactarán por WhatsApp muy pronto. ¡Prepárate para un viaje increíble!",
+    thankYouText: "Nuestro consultor te contactará por WhatsApp muy pronto. ¡Prepárate para un viaje increíble!",
     close: "Cerrar",
     noThanksTitle: "¡Sin problema!",
     noThanksText: "Cuando estés listo, aquí estaremos. ¡Vuelve a jugar cuando quieras!",
   },
 };
+
+// Accent colors for consultant cards (cycles through these)
+const CARD_ACCENTS = [
+  { border: "hover:border-blue-500/50", bg: "hover:bg-blue-600/20", badge: "bg-blue-600/30 text-blue-300", activeBorder: "border-blue-500/50" },
+  { border: "hover:border-pink-500/50", bg: "hover:bg-pink-600/20", badge: "bg-pink-600/30 text-pink-300", activeBorder: "border-pink-500/50" },
+  { border: "hover:border-purple-500/50", bg: "hover:bg-purple-600/20", badge: "bg-purple-600/30 text-purple-300", activeBorder: "border-purple-500/50" },
+  { border: "hover:border-emerald-500/50", bg: "hover:bg-emerald-600/20", badge: "bg-emerald-600/30 text-emerald-300", activeBorder: "border-emerald-500/50" },
+];
 
 export function ExperienceFeedback({ restaurantName, restaurantId, language, onClose }: ExperienceFeedbackProps) {
   const [step, setStep] = useState<Step>("rating");
@@ -84,9 +99,14 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
   const [hoveredRating, setHoveredRating] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedConsultant, setSelectedConsultant] = useState<"lucas" | "vicky" | null>(null);
+  const [selectedConsultantIdx, setSelectedConsultantIdx] = useState<number | null>(null);
 
   const t = content[language];
+
+  // Fetch consultants from database
+  const consultantsQuery = trpc.consultants.byRestaurant.useQuery({ restaurantId });
+  const rawConsultants = consultantsQuery.data ?? [];
+  const consultants = rawConsultants.length > 0 ? rawConsultants : FALLBACK_CONSULTANTS;
 
   const saveLead = trpc.leads.save.useMutation();
 
@@ -112,13 +132,15 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
     setStep("no_thanks");
   };
 
-  const handleConsultantSelect = (consultant: "lucas" | "vicky") => {
-    setSelectedConsultant(consultant);
+  const handleConsultantSelect = (idx: number) => {
+    setSelectedConsultantIdx(idx);
     setStep("contact_form");
   };
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) return;
+
+    const selectedConsultant = selectedConsultantIdx !== null ? consultants[selectedConsultantIdx] : null;
 
     await saveLead.mutateAsync({
       restaurantId,
@@ -127,15 +149,16 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
       interested: true,
       name,
       phone,
-      consultant: selectedConsultant,
+      // Map to legacy "lucas"/"vicky" or null for custom consultants
+      consultant: selectedConsultant?.id === -1 ? "lucas" : selectedConsultant?.id === -2 ? "vicky" : null,
     });
 
     // Open WhatsApp with pre-filled message
-    const consultantNumber = selectedConsultant === "lucas" ? LUCAS_WHATSAPP : VICKY_WHATSAPP;
-    const restaurantLabel = restaurantName;
+    const consultantNumber = selectedConsultant?.whatsappNumber ?? "5511947515284";
+    const consultantName = selectedConsultant?.name ?? "";
     const msg = language === "en"
-      ? `Hi! I just had an amazing experience at ${restaurantLabel} with the ImAInd app and I'd love to learn more about inFlux! My name is ${name}.`
-      : `¡Hola! Acabo de tener una experiencia increíble en ${restaurantLabel} con la app ImAInd y me gustaría saber más sobre inFlux. Mi nombre es ${name}.`;
+      ? `Hi${consultantName ? ` ${consultantName}` : ""}! I just had an amazing experience at ${restaurantName} with the ImAInd app and I'd love to learn more about inFlux! My name is ${name}.`
+      : `¡Hola${consultantName ? ` ${consultantName}` : ""}! Acabo de tener una experiencia increíble en ${restaurantName} con la app ImAInd y me gustaría saber más sobre inFlux. Mi nombre es ${name}.`;
 
     window.open(`https://wa.me/${consultantNumber}?text=${encodeURIComponent(msg)}`, "_blank");
     setStep("thank_you");
@@ -215,44 +238,45 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
                 <p className="text-slate-400 mt-2 text-sm leading-relaxed">{t.interestText}</p>
               </div>
               <p className="text-center text-slate-300 text-sm font-medium">{t.meetTeam}</p>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Lucas */}
-                <button
-                  onClick={() => handleConsultantSelect("lucas")}
-                  className="group flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-500/50 transition-all duration-200"
-                >
-                  <img
-                    src={LUCAS_IMG}
-                    alt="Lucas"
-                    className="w-20 h-20 rounded-full object-cover border-2 border-blue-500/50 group-hover:border-blue-400 transition-all"
-                  />
-                  <div className="text-center">
-                    <p className="text-white font-bold text-sm">{t.lucasTitle}</p>
-                    <p className="text-slate-400 text-xs">{t.lucasSub}</p>
-                  </div>
-                  <span className="text-xs bg-blue-600/30 text-blue-300 px-3 py-1 rounded-full font-medium">
-                    {t.chatLucas}
-                  </span>
-                </button>
-                {/* Vicky */}
-                <button
-                  onClick={() => handleConsultantSelect("vicky")}
-                  className="group flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-pink-600/20 border border-white/10 hover:border-pink-500/50 transition-all duration-200"
-                >
-                  <img
-                    src={VICKY_IMG}
-                    alt="Vicky"
-                    className="w-20 h-20 rounded-full object-cover border-2 border-pink-500/50 group-hover:border-pink-400 transition-all"
-                  />
-                  <div className="text-center">
-                    <p className="text-white font-bold text-sm">{t.vickyTitle}</p>
-                    <p className="text-slate-400 text-xs">{t.vickySub}</p>
-                  </div>
-                  <span className="text-xs bg-pink-600/30 text-pink-300 px-3 py-1 rounded-full font-medium">
-                    {t.chatVicky}
-                  </span>
-                </button>
-              </div>
+
+              {/* Dynamic consultants grid */}
+              {consultantsQuery.isLoading ? (
+                <div className="text-center py-4 text-slate-400 text-sm">Carregando consultores...</div>
+              ) : (
+                <div className={`grid gap-4 ${consultants.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                  {consultants.map((c, idx) => {
+                    const accent = CARD_ACCENTS[idx % CARD_ACCENTS.length];
+                    const roleLabel = language === "es" ? (c.roleEs || c.role) : c.role;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => handleConsultantSelect(idx)}
+                        className={`group flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 ${accent.bg} border border-white/10 ${accent.border} transition-all duration-200`}
+                      >
+                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/40 transition-all flex items-center justify-center bg-white/10">
+                          {c.avatarUrl ? (
+                            <img
+                              src={c.avatarUrl}
+                              alt={c.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-3xl">👤</span>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white font-bold text-sm">{c.name}</p>
+                          {roleLabel && <p className="text-slate-400 text-xs">{roleLabel}</p>}
+                        </div>
+                        <span className={`text-xs ${accent.badge} px-3 py-1 rounded-full font-medium`}>
+                          {t.chatWith} {c.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <Button
                 onClick={handleInterestNo}
                 variant="ghost"
@@ -267,11 +291,17 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
           {step === "contact_form" && (
             <div className="space-y-5">
               <div className="text-center">
-                <img
-                  src={selectedConsultant === "lucas" ? LUCAS_IMG : VICKY_IMG}
-                  alt={selectedConsultant === "lucas" ? "Lucas" : "Vicky"}
-                  className="w-16 h-16 rounded-full object-cover mx-auto border-2 border-purple-500 mb-3"
-                />
+                {selectedConsultantIdx !== null && consultants[selectedConsultantIdx]?.avatarUrl ? (
+                  <img
+                    src={consultants[selectedConsultantIdx].avatarUrl!}
+                    alt={consultants[selectedConsultantIdx].name}
+                    className="w-16 h-16 rounded-full object-cover mx-auto border-2 border-purple-500 mb-3"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-purple-500 mx-auto mb-3 flex items-center justify-center text-2xl">
+                    👤
+                  </div>
+                )}
                 <h2 className="text-lg font-bold text-white">{t.formTitle}</h2>
               </div>
               <div className="space-y-3">

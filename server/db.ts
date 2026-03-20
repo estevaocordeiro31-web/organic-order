@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants, partnerUsers } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants, partnerUsers, partnerConsultants, InsertPartnerConsultant } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -507,4 +507,56 @@ export async function getTodayOrderStats() {
     delivered: todayOrders.filter(o => o.status === "delivered").length,
     revenue: todayOrders.filter(o => o.status === "delivered").reduce((sum, o) => sum + parseFloat(o.totalAmount), 0),
   };
+}
+
+// ===== PARTNER CONSULTANTS =====
+
+export async function getConsultantsByRestaurant(restaurantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(partnerConsultants)
+    .where(and(eq(partnerConsultants.restaurantId, restaurantId), eq(partnerConsultants.active, true)))
+    .orderBy(asc(partnerConsultants.sortOrder));
+}
+
+export async function getAllConsultantsByRestaurant(restaurantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(partnerConsultants)
+    .where(eq(partnerConsultants.restaurantId, restaurantId))
+    .orderBy(asc(partnerConsultants.sortOrder));
+}
+
+export async function createConsultant(data: InsertPartnerConsultant) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(partnerConsultants).values(data).$returningId();
+  return result.id;
+}
+
+export async function updateConsultant(id: number, data: Partial<{
+  name: string;
+  role: string;
+  roleEs: string;
+  avatarUrl: string | null;
+  whatsappNumber: string;
+  active: boolean;
+  sortOrder: number;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(partnerConsultants).set(data).where(eq(partnerConsultants.id, id));
+}
+
+export async function deleteConsultant(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(partnerConsultants).where(eq(partnerConsultants.id, id));
+}
+
+export async function getConsultantById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(partnerConsultants).where(eq(partnerConsultants.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
 }
