@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Star, Flame, ChevronLeft, Plus, Minus, X, Zap } from "lucide-react";
+import { ExperienceFeedback } from "@/components/ExperienceFeedback";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/cabana-hero-burger-iftcYRCSCCQwPF6cjbRChe.webp";
 const WAGYU_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/cabana-wagyu-burger-Af6GrEr8odKcKUP3fmaCJP.webp";
@@ -44,6 +45,7 @@ export default function CabanaBurgerExperience() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<"menu" | "games" | "facts">("menu");
 
   const { data: restaurantMenu } = trpc.restaurant.menu.useQuery({ restaurantId: RESTAURANT_ID });
@@ -166,14 +168,34 @@ export default function CabanaBurgerExperience() {
                 : "Pregúntale al mesero: \"¿Cuánto tardará?\" o \"¿Me podría traer agua, por favor?\""}
             </p>
           </div>
-          <Button
-            onClick={() => setLocation("/")}
-            className="bg-yellow-400 text-black hover:bg-yellow-300 font-black text-lg px-8 py-4 rounded-full"
-          >
-            {lang === "en" ? "Back to Home" : "Volver al Inicio"}
-          </Button>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Button
+              onClick={() => setShowFeedback(true)}
+              className="bg-yellow-400 text-black hover:bg-yellow-300 font-black text-lg px-8 py-4 rounded-full"
+            >
+              {lang === "en" ? "Rate Experience" : "Calificar Experiencia"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/")}
+              className="border-yellow-400/30 text-yellow-400/60 hover:text-yellow-400 bg-transparent rounded-full"
+            >
+              {lang === "en" ? "Back to Home" : "Volver al Inicio"}
+            </Button>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (showFeedback) {
+    return (
+      <ExperienceFeedback
+        restaurantName="Cabana Burger"
+        restaurantId={RESTAURANT_ID}
+        language={lang}
+        onClose={() => setLocation("/")}
+      />
     );
   }
 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ExperienceFeedback } from "@/components/ExperienceFeedback";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 const TOPDOG_HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/topdog-hero-hotdog-TupycygunEJD2NAKgy66sf.webp";
@@ -24,7 +25,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "menu" | "cart" | "order" | "done";
+type Step = "menu" | "cart" | "order" | "done" | "feedback";
 
 export default function TopDogExperience() {
   const [, navigate] = useLocation();
@@ -415,20 +416,32 @@ export default function TopDogExperience() {
         </p>
         <div className="flex gap-3 justify-center">
           <Button
-            onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }}
+            onClick={() => setStep("feedback")}
             className="bg-red-600 hover:bg-red-500 text-white border-0 rounded-xl"
           >
-            {lang === "en" ? "Order again" : "Pedir de nuevo"}
+            {lang === "en" ? "Rate experience" : "Calificar experiencia"}
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate("/")}
+            onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }}
             className="border-white/20 text-white/60 hover:text-white bg-transparent rounded-xl"
           >
-            {lang === "en" ? "Back to home" : "Volver al inicio"}
+            {lang === "en" ? "Order again" : "Pedir de nuevo"}
           </Button>
         </div>
       </motion.div>
     </div>
   );
+
+  // ===== FEEDBACK =====
+  if (step === "feedback") {
+    return (
+      <ExperienceFeedback
+        restaurantName="Top Dog Brasil"
+        restaurantId={RESTAURANT_ID}
+        language={lang}
+        onClose={() => navigate("/")}
+      />
+    );
+  }
 }

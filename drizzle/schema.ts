@@ -227,3 +227,23 @@ export const appSettings = mysqlTable("app_settings", {
 
 export type AppSetting = typeof appSettings.$inferSelect;
 export type InsertAppSetting = typeof appSettings.$inferInsert;
+
+/**
+ * Leads - captação de interessados inFlux via ImAInd
+ */
+export const leads = mysqlTable("leads", {
+  id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").notNull(),
+  language: mysqlEnum("language", ["en", "es"]).default("en").notNull(),
+  rating: int("rating"),
+  interested: boolean("interested").default(false).notNull(),
+  name: varchar("name", { length: 200 }),
+  phone: varchar("phone", { length: 50 }),
+  consultant: mysqlEnum("consultant", ["lucas", "vicky"]),
+  restaurantName: varchar("restaurantName", { length: 200 }),
+  notified: boolean("notified").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = typeof leads.$inferInsert;

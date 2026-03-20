@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ExperienceFeedback } from "@/components/ExperienceFeedback";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 const EP_HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/elpatron-hero-tacos-NZjSGhLqAKFr2Nt6x5xArR.png";
@@ -23,7 +24,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "menu" | "cart" | "order" | "done";
+type Step = "menu" | "cart" | "order" | "done" | "feedback";
 
 const ITEM_IMAGES: Record<string, string> = {
   "Barbacoa Burrito": EP_BURRITO,
@@ -337,15 +338,27 @@ export default function ElPatronExperience() {
         <h2 className="text-2xl font-black text-orange-100 mb-2">{lang === "en" ? "Order placed!" : "¡Pedido enviado!"}</h2>
         <p className="text-orange-100/50 text-sm mb-6">{lang === "en" ? "Your Mexican feast is being prepared! 🇲🇽🔥" : "¡Tu festín mexicano está siendo preparado! 🇲🇽🔥"}</p>
         <div className="flex gap-3 justify-center">
-          <Button onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }}
+          <Button onClick={() => setStep("feedback")}
             className="border-0 text-white" style={{ background: "linear-gradient(135deg, #dc2626, #ea580c)" }}>
-            {lang === "en" ? "Order again" : "Pedir de nuevo"}
+            {lang === "en" ? "Rate experience" : "Calificar experiencia"}
           </Button>
-          <Button variant="outline" onClick={() => navigate("/")} className="border-orange-900/30 text-orange-100/60 hover:text-orange-100 bg-transparent rounded-xl">
-            {lang === "en" ? "Back to home" : "Volver al inicio"}
+          <Button variant="outline" onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }} className="border-orange-900/30 text-orange-100/60 hover:text-orange-100 bg-transparent rounded-xl">
+            {lang === "en" ? "Order again" : "Pedir de nuevo"}
           </Button>
         </div>
       </motion.div>
     </div>
   );
+
+  // ===== FEEDBACK =====
+  if (step === "feedback") {
+    return (
+      <ExperienceFeedback
+        restaurantName="El Patrón"
+        restaurantId={RESTAURANT_ID}
+        language={lang}
+        onClose={() => navigate("/")}
+      />
+    );
+  }
 }

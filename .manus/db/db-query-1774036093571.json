@@ -1,0 +1,43 @@
+{
+  "query": "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = 'leads' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_NAME = 'leads' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "restaurantId"
+    },
+    {
+      "COLUMN_NAME": "language"
+    },
+    {
+      "COLUMN_NAME": "rating"
+    },
+    {
+      "COLUMN_NAME": "interested"
+    },
+    {
+      "COLUMN_NAME": "name"
+    },
+    {
+      "COLUMN_NAME": "phone"
+    },
+    {
+      "COLUMN_NAME": "consultant"
+    },
+    {
+      "COLUMN_NAME": "restaurantName"
+    },
+    {
+      "COLUMN_NAME": "notified"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nrestaurantId\nlanguage\nrating\ninterested\nname\nphone\nconsultant\nrestaurantName\nnotified\ncreatedAt\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

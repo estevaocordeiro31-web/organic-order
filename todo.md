@@ -219,3 +219,31 @@
 - [x] Adicionar card do Cabana Burger na tela de seleção de parceiros
 - [x] Criar usuário parceiro: cabana / cabana2024 (Rebeca - Cabana Burger)
 - [x] QR Codes por mesa do Cabana Burger (via /partner/qrcodes)
+
+## v11 - Modo Voz nos Novos Parceiros
+
+- [ ] Criar hook useRestaurantVoice com vocabulário específico por parceiro
+- [ ] Top Dog: frases de pedido em EN/ES (hot dogs, smash burgers, fries)
+- [ ] La Guapa: frases de pedido em EN/ES (empanadas, sabores, combos)
+- [ ] El Patron: frases de pedido em EN/ES (tacos, burritos, nachos)
+- [ ] Cabana Burger: frases de pedido em EN/ES (burgers, Wagyu, shakes)
+- [ ] Integrar VoiceOrder no TopDogExperience
+- [ ] Integrar VoiceOrder no LaGuapaExperience
+- [ ] Integrar VoiceOrder no ElPatronExperience
+- [ ] Integrar VoiceOrder no CabanaBurgerExperience
+- [ ] Integrar QASimulation nos 4 novos parceiros
+- [ ] Garçons virtuais com voz EN/ES para cada parceiro
+
+## v12 - Tela de Feedback + Captação de Leads inFlux
+
+- [ ] Gerar avatar Disney-Pixar do Lucas (consultor inFlux, americano)
+- [ ] Gerar avatar Disney-Pixar da Vicky (consultora inFlux, brasileira)
+- [ ] Componente ExperienceFeedback: avaliação com estrelas (1-5)
+- [ ] Pergunta: "Você achou legal aprender um segundo idioma assim?"
+- [ ] Se sim: apresentar Lucas e Vicky com proposta da inFlux
+- [ ] CTA WhatsApp: botão que abre conversa direta com Lucas ou Vicky
+- [ ] Salvar lead no banco: nome, telefone, restaurante, idioma, nota, interesse
+- [ ] Notificar Lucas e Vicky via WhatsApp quando lead demonstrar interesse
+- [ ] Integrar tela de feedback no final do Organic, Top Dog, La Guapa, El Patron, Cabana
+- [ ] Mensagem personalizada por idioma (EN/ES/PT)
+- [ ] Backend: tabela leads com dados completos

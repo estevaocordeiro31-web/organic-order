@@ -38,6 +38,9 @@ import * as crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
+import { leads, restaurants as restaurantsTable } from "../drizzle/schema";
+import { getDb } from "./db";
+import { eq } from "drizzle-orm";
 
 const PARTNER_JWT_SECRET = process.env.JWT_SECRET || "partner-secret-key";
 
@@ -89,6 +92,49 @@ export const appRouter = router({
     }),
   }),
 
+  // ===== LEADS ROUTES (inFlux captação) =====
+  leads: router({
+    save: publicProcedure
+      .input(z.object({
+        restaurantId: z.number(),
+        language: z.enum(["en", "es"]),
+        rating: z.number().min(1).max(5).optional(),
+        interested: z.boolean(),
+        name: z.string().nullable().optional(),
+        phone: z.string().nullable().optional(),
+        consultant: z.enum(["lucas", "vicky"]).nullable().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        // Get restaurant name
+        const [restaurant] = await db!.select().from(restaurantsTable).where(eq(restaurantsTable.id, input.restaurantId)).limit(1);
+        const [result] = await db!.insert(leads).values({
+          restaurantId: input.restaurantId,
+          language: input.language,
+          rating: input.rating ?? null,
+          interested: input.interested,
+          name: input.name ?? null,
+          phone: input.phone ?? null,
+          consultant: input.consultant ?? null,
+          restaurantName: restaurant?.name ?? null,
+          notified: false,
+        });
+        // Notify owner when someone is interested
+        if (input.interested && input.name) {
+          await notifyOwner({
+            title: `🎯 Novo Lead inFlux - ${restaurant?.name ?? "ImAInd"}`,
+            content: `Nome: ${input.name}\nTelefone: ${input.phone ?? "não informado"}\nConsultor: ${input.consultant ?? "não escolhido"}\nIdioma: ${input.language === "en" ? "Inglês" : "Espanhol"}\nNota: ${input.rating ?? "não avaliado"}/5\nRestaurante: ${restaurant?.name ?? input.restaurantId}`,
+          });
+        }
+        return { success: true };
+      }),
+    list: protectedProcedure
+      .query(async () => {
+        const db = await getDb();
+        const allLeads = await db!.select().from(leads).orderBy(leads.createdAt);
+        return allLeads.reverse();
+      }),
+  }),
   // ===== RESTAURANT ROUTES =====
   restaurant: router({
     all: publicProcedure.query(async () => {

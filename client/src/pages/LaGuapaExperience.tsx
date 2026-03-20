@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ExperienceFeedback } from "@/components/ExperienceFeedback";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 const LAGUAPA_HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/laguapa-hero-empanadas-gmhHnbSCF8JM5DxBXEoXFA.webp";
@@ -23,7 +24,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "menu" | "cart" | "order" | "done";
+type Step = "menu" | "cart" | "order" | "done" | "feedback";
 
 // Image map for La Guapa items
 const ITEM_IMAGES: Record<string, string> = {
@@ -340,15 +341,27 @@ export default function LaGuapaExperience() {
         <h2 className="text-2xl font-black text-amber-100 mb-2">{lang === "en" ? "Order placed!" : "¡Pedido enviado!"}</h2>
         <p className="text-amber-100/50 text-sm mb-6">{lang === "en" ? "Your empanadas are being prepared with love! 🇦🇷" : "¡Tus empanadas se están preparando con amor! 🇦🇷"}</p>
         <div className="flex gap-3 justify-center">
-          <Button onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }}
+          <Button onClick={() => setStep("feedback")}
             className="border-0 text-[#1a1205]" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}>
-            {lang === "en" ? "Order again" : "Pedir de nuevo"}
+            {lang === "en" ? "Rate experience" : "Calificar experiencia"}
           </Button>
-          <Button variant="outline" onClick={() => navigate("/")} className="border-amber-900/30 text-amber-100/60 hover:text-amber-100 bg-transparent rounded-xl">
-            {lang === "en" ? "Back to home" : "Volver al inicio"}
+          <Button variant="outline" onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }} className="border-amber-900/30 text-amber-100/60 hover:text-amber-100 bg-transparent rounded-xl">
+            {lang === "en" ? "Order again" : "Pedir de nuevo"}
           </Button>
         </div>
       </motion.div>
     </div>
   );
+
+  // ===== FEEDBACK =====
+  if (step === "feedback") {
+    return (
+      <ExperienceFeedback
+        restaurantName="La Guapa"
+        restaurantId={RESTAURANT_ID}
+        language={lang}
+        onClose={() => navigate("/")}
+      />
+    );
+  }
 }
