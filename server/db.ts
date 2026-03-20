@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -90,23 +90,38 @@ export async function getUserByOpenId(openId: string) {
 
 // ===== MENU CATEGORIES =====
 
-export async function getActiveCategories() {
+export async function getActiveCategories(restaurantId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (restaurantId) {
+    return db.select().from(menuCategories)
+      .where(and(eq(menuCategories.active, true), eq(menuCategories.restaurantId, restaurantId)))
+      .orderBy(asc(menuCategories.sortOrder));
+  }
   return db.select().from(menuCategories).where(eq(menuCategories.active, true)).orderBy(asc(menuCategories.sortOrder));
 }
 
-export async function getAllCategories() {
+export async function getAllCategories(restaurantId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (restaurantId) {
+    return db.select().from(menuCategories)
+      .where(eq(menuCategories.restaurantId, restaurantId))
+      .orderBy(asc(menuCategories.sortOrder));
+  }
   return db.select().from(menuCategories).orderBy(asc(menuCategories.sortOrder));
 }
 
 // ===== MENU ITEMS =====
 
-export async function getAvailableMenuItems() {
+export async function getAvailableMenuItems(restaurantId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (restaurantId) {
+    return db.select().from(menuItems)
+      .where(and(eq(menuItems.available, true), eq(menuItems.restaurantId, restaurantId)))
+      .orderBy(asc(menuItems.sortOrder));
+  }
   return db.select().from(menuItems).where(eq(menuItems.available, true)).orderBy(asc(menuItems.sortOrder));
 }
 
@@ -132,10 +147,28 @@ export async function toggleMenuItemAvailability(itemId: number, available: bool
 
 // ===== TABLES =====
 
-export async function getActiveTables() {
+export async function getActiveTables(restaurantId?: number) {
   const db = await getDb();
   if (!db) return [];
+  if (restaurantId) {
+    return db.select().from(tables)
+      .where(and(eq(tables.active, true), eq(tables.restaurantId, restaurantId)))
+      .orderBy(asc(tables.number));
+  }
   return db.select().from(tables).where(eq(tables.active, true)).orderBy(asc(tables.number));
+}
+
+export async function getRestaurantBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(restaurants).where(and(eq(restaurants.slug, slug), eq(restaurants.active, true))).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getAllRestaurants() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(restaurants).where(eq(restaurants.active, true));
 }
 
 // ===== ORDERS =====

@@ -148,3 +148,50 @@
 - [ ] Top Dog Brasil: traduzir cardápio completo para inglês e espanhol
 - [ ] La Guapa: traduzir cardápio completo para inglês e espanhol
 - [ ] El Patron: traduzir cardápio para inglês (já tem nomes em espanhol)
+
+## v8 - Cardápios e Experiências dos Parceiros
+
+### Pesquisa e Conteúdo
+- [ ] Pesquisar cardápio real do Top Dog Brasil
+- [ ] Pesquisar cardápio real da La Guapa
+- [ ] Pesquisar cardápio real do El Patron
+- [ ] Traduzir cardápios para EN e ES
+
+### Assets Visuais
+- [ ] Gerar imagens dos pratos do Top Dog (estilo urbano/neon)
+- [ ] Gerar imagens dos pratos da La Guapa (estilo rústico/argentino)
+- [ ] Gerar imagens dos pratos do El Patron (estilo mexicano/vibrante)
+
+### Experiências Imersivas
+- [ ] Interface Top Dog: visual urbano, neon, dark, street food
+- [ ] Interface La Guapa: visual rústico, bege/dourado, argentino artesanal
+- [ ] Interface El Patron: visual mexicano vibrante, cores quentes, festivo
+
+### Banco de Dados
+- [ ] Seed cardápio Top Dog em PT/EN/ES
+- [ ] Seed cardápio La Guapa em PT/EN/ES
+- [ ] Seed cardápio El Patron em PT/EN/ES
+
+### Dashboard por Parceiro
+- [ ] Filtro por restaurantId no painel admin
+- [ ] Login do parceiro associado ao restaurant_id
+- [ ] QR Codes exclusivos por mesa de cada parceiro
+- [ ] Painel master para Estevão (todos os restaurantes)
+
+## v8.1 - Status de Implementação (concluído)
+- [x] Pesquisar cardápio real do Top Dog Brasil (site oficial)
+- [x] Pesquisar cardápio real da La Guapa (iFood + site)
+- [x] Pesquisar cardápio real do El Patron (Goomer)
+- [x] Traduzir cardápios para EN e ES (62 itens totais)
+- [x] Gerar imagens Disney-Pixar dos pratos do Top Dog
+- [x] Gerar imagens Disney-Pixar dos pratos da La Guapa
+- [x] Gerar imagens Disney-Pixar dos pratos do El Patron
+- [x] Interface Top Dog: visual urbano neon preto/vermelho com grid lines
+- [x] Interface La Guapa: visual rústico bege/dourado com textura de pontos
+- [x] Interface El Patron: visual mexicano vibrante vermelho/laranja com diagonais
+- [x] Seed cardápio Top Dog em PT/EN/ES (15 itens, 3 categorias, 8 mesas)
+- [x] Seed cardápio La Guapa em PT/EN/ES (17 itens, 5 categorias, 6 mesas)
+- [x] Seed cardápio El Patron em PT/EN/ES (30 itens, 9 categorias, 8 mesas)
+- [x] Rotas /topdog, /laguapa, /elpatron ativas no app
+- [x] Tela de seleção de parceiros com imagens reais dos pratos
+- [x] 65 testes passando (18 novos testes de multi-tenant)

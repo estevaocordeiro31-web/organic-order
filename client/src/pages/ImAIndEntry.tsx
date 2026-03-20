@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 
-// Restaurant partner data
+// Restaurant partner data with real food images
 const PARTNERS = [
   {
     id: "organic",
@@ -26,7 +26,10 @@ const PARTNERS = [
     emoji: "🥑",
     flag: "🇧🇷",
     available: true,
-    route: "/",
+    route: "/organic",
+    heroImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/organic-v2-scene4-healthy-food-5gTWFGFVhNb4JJuJaXFMQH.webp",
+    badge: "✅ Disponível",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   },
   {
     id: "topdog",
@@ -46,7 +49,10 @@ const PARTNERS = [
     emoji: "🌭",
     flag: "🇺🇸",
     available: true,
-    route: "/restaurant/topdog",
+    route: "/topdog",
+    heroImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/topdog-hero-hotdog-TupycygunEJD2NAKgy66sf.webp",
+    badge: "🔥 Novo",
+    badgeColor: "bg-red-500/20 text-red-300 border-red-500/30",
   },
   {
     id: "laguapa",
@@ -66,7 +72,10 @@ const PARTNERS = [
     emoji: "🥟",
     flag: "🇦🇷",
     available: true,
-    route: "/restaurant/laguapa",
+    route: "/laguapa",
+    heroImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/laguapa-hero-empanadas-gmhHnbSCF8JM5DxBXEoXFA.webp",
+    badge: "🥟 Novo",
+    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   },
   {
     id: "elpatron",
@@ -86,7 +95,10 @@ const PARTNERS = [
     emoji: "🌮",
     flag: "🇲🇽",
     available: true,
-    route: "/restaurant/elpatron",
+    route: "/elpatron",
+    heroImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/elpatron-hero-tacos-33NLxWaMn8r73aqjo4WSKd.webp",
+    badge: "🌶️ Novo",
+    badgeColor: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   },
 ];
 
@@ -426,47 +438,52 @@ export default function ImAIndEntry() {
             </div>
           </motion.div>
 
-          {/* Partner cards */}
+          {/* Partner cards - visual grid with food images */}
           <div className="space-y-3 flex-1">
             {PARTNERS.map((partner, i) => (
               <motion.button
                 key={partner.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + i * 0.08 }}
                 onClick={() => {
-                  // Store selection in sessionStorage for the restaurant to use
                   sessionStorage.setItem("imaind_lang", selectedLang);
                   sessionStorage.setItem("imaind_voice", voiceMode ? "1" : "0");
                   sessionStorage.setItem("imaind_restaurant", partner.id);
                   navigate(`${partner.route}?lang=${selectedLang}&voice=${voiceMode ? "1" : "0"}`);
                 }}
-                className={`w-full text-left rounded-2xl border ${partner.borderColor} ${partner.hoverBorder} bg-gradient-to-r ${partner.cardBg} hover:scale-[1.02] active:scale-[0.99] transition-all duration-200 p-4 flex items-center gap-4 group shadow-lg`}
+                className={`w-full text-left rounded-2xl border ${partner.borderColor} ${partner.hoverBorder} overflow-hidden hover:scale-[1.02] active:scale-[0.99] transition-all duration-200 group shadow-xl relative`}
               >
-                {/* Emoji icon */}
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner"
-                  style={{ backgroundColor: `${partner.accent}20` }}
-                >
-                  {partner.emoji}
-                </div>
+                {/* Food image background */}
+                <div className="relative h-28 overflow-hidden">
+                  <img
+                    src={(partner as any).heroImage}
+                    alt={partner.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-bold text-white text-sm truncate">{partner.name}</h3>
-                    <span className="text-base">{partner.flag}</span>
+                  {/* Content over image */}
+                  <div className="absolute inset-0 p-4 flex items-end">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{partner.flag}</span>
+                        <h3 className="font-bold text-white text-base truncate">{partner.name}</h3>
+                        {/* Badge */}
+                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${(partner as any).badgeColor}`}>
+                          {(partner as any).badge}
+                        </span>
+                      </div>
+                      <p className={`text-xs font-semibold ${partner.textAccent}`}>{partner.cuisine}</p>
+                      <p className="text-white/50 text-xs mt-0.5 truncate">{partner.tagline}</p>
+                    </div>
+                    <ChevronRight
+                      className={`w-6 h-6 ${partner.textAccent} opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0 ml-2`}
+                    />
                   </div>
-                  <p className={`text-xs font-medium ${partner.textAccent} truncate`}>
-                    {partner.cuisine}
-                  </p>
-                  <p className="text-white/30 text-xs mt-0.5 truncate">{partner.tagline}</p>
                 </div>
-
-                {/* Arrow */}
-                <ChevronRight
-                  className={`w-5 h-5 ${partner.textAccent} opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0`}
-                />
               </motion.button>
             ))}
           </div>

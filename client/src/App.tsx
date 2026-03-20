@@ -16,6 +16,9 @@ import QASimulation from "./pages/QASimulation";
 import Leaderboard from "./pages/Leaderboard";
 import AdminSettings from "./pages/AdminSettings";
 import RestaurantExperience from "./pages/RestaurantExperience";
+import TopDogExperience from "./pages/TopDogExperience";
+import LaGuapaExperience from "./pages/LaGuapaExperience";
+import ElPatronExperience from "./pages/ElPatronExperience";
 
 function Router() {
   return (
@@ -32,6 +35,9 @@ function Router() {
       <Route path={"/admin/qrcodes"} component={QRCodes} />
       <Route path={"/admin/settings"} component={AdminSettings} />
       <Route path={"/restaurant/:slug"} component={RestaurantExperience} />
+      <Route path={"/topdog"} component={TopDogExperience} />
+      <Route path={"/laguapa"} component={LaGuapaExperience} />
+      <Route path={"/elpatron"} component={ElPatronExperience} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

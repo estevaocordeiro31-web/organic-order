@@ -26,6 +26,8 @@ import {
   getSetting,
   setSetting,
   getAllSettings,
+  getRestaurantBySlug,
+  getAllRestaurants,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
@@ -46,14 +48,38 @@ export const appRouter = router({
     }),
   }),
 
-  // ===== PUBLIC MENU ROUTES =====
+  // ===== RESTAURANT ROUTES =====
+  restaurant: router({
+    all: publicProcedure.query(async () => {
+      return getAllRestaurants();
+    }),
+
+    bySlug: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        return getRestaurantBySlug(input.slug);
+      }),
+
+    menu: publicProcedure
+      .input(z.object({ restaurantId: z.number() }))
+      .query(async ({ input }) => {
+        const [categories, items, restaurantTables] = await Promise.all([
+          getActiveCategories(input.restaurantId),
+          getAvailableMenuItems(input.restaurantId),
+          getActiveTables(input.restaurantId),
+        ]);
+        return { categories, items, tables: restaurantTables };
+      }),
+  }),
+
+  // ===== PUBLIC MENU ROUTES (Organic - restaurantId=1 default) =====
   menu: router({
     categories: publicProcedure.query(async () => {
-      return getActiveCategories();
+      return getActiveCategories(1);
     }),
 
     items: publicProcedure.query(async () => {
-      return getAvailableMenuItems();
+      return getAvailableMenuItems(1);
     }),
 
     itemsByCategory: publicProcedure
@@ -63,7 +89,7 @@ export const appRouter = router({
       }),
 
     tables: publicProcedure.query(async () => {
-      return getActiveTables();
+      return getActiveTables(1);
     }),
   }),
 
