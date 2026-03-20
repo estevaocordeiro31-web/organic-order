@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO restaurants (slug, name, nameEn, nameEs, cuisineType, tagline, address, themeColor, accentColor, active) VALUES ('cabana', 'Cabana Burger', 'Cabana Burger', 'Cabana Burger', 'Gourmet Burgers', 'Top burgers for top moments ✌️', 'Rua Barão de Teffé, 160 · Jundiaí - SP', '#1a1200', '#eab308', true);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute INSERT INTO restaurants (slug, name, nameEn, nameEs, cuisineType, tagline, address, themeColor, accentColor, active) VALUES ('cabana', 'Cabana Burger', 'Cabana Burger', 'Cabana Burger', 'Gourmet Burgers', 'Top burgers for top moments ✌️', 'Rua Barão de Teffé, 160 · Jundiaí - SP', '#1a1200', '#eab308', true);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 130
+}

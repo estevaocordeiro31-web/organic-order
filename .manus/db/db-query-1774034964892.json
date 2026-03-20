@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO partner_users (restaurantId, username, passwordHash, displayName, role) VALUES (30001, 'cabana', '6ff5c04f604eeb02f79cd2c8e906c5b50c668218f201ee77e8f45c673a56d0b8', 'Rebeca - Cabana Burger', 'partner');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute INSERT INTO partner_users (restaurantId, username, passwordHash, displayName, role) VALUES (30001, 'cabana', '6ff5c04f604eeb02f79cd2c8e906c5b50c668218f201ee77e8f45c673a56d0b8', 'Rebeca - Cabana Burger', 'partner');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 56
+}

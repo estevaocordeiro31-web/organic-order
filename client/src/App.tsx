@@ -19,6 +19,7 @@ import RestaurantExperience from "./pages/RestaurantExperience";
 import TopDogExperience from "./pages/TopDogExperience";
 import LaGuapaExperience from "./pages/LaGuapaExperience";
 import ElPatronExperience from "./pages/ElPatronExperience";
+import CabanaBurgerExperience from "./pages/CabanaBurgerExperience";
 import PartnerLogin from "./pages/PartnerLogin";
 import PartnerDashboard from "./pages/PartnerDashboard";
 import MasterDashboard from "./pages/MasterDashboard";
@@ -42,6 +43,7 @@ function Router() {
       <Route path={"/topdog"} component={TopDogExperience} />
       <Route path={"/laguapa"} component={LaGuapaExperience} />
       <Route path={"/elpatron"} component={ElPatronExperience} />
+      <Route path={"/cabana"} component={CabanaBurgerExperience} />
       <Route path={"/partner/login"} component={PartnerLogin} />
       <Route path={"/partner/dashboard"} component={PartnerDashboard} />
       <Route path={"/partner/qrcodes"} component={PartnerQRCodes} />

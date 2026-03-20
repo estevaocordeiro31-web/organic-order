@@ -210,3 +210,12 @@
 - [x] Visão consolidada: pedidos de todos os restaurantes em tempo real
 - [x] Filtro por restaurante no painel master
 - [x] Métricas por restaurante: total de pedidos, faturamento, alunos ativos
+
+## v10 - Cabana Burger (5º Parceiro)
+- [x] Pesquisar Cabana Burger Jundiaí e @Rebeca_oscalis
+- [x] Gerar imagens dos pratos do Cabana Burger estilo Disney-Pixar
+- [x] Criar experiência visual imersiva do Cabana Burger (dark/neon amarelo)
+- [x] Seed cardápio Cabana Burger em PT/EN/ES (10 categorias, 26 itens)
+- [x] Adicionar card do Cabana Burger na tela de seleção de parceiros
+- [x] Criar usuário parceiro: cabana / cabana2024 (Rebeca - Cabana Burger)
+- [x] QR Codes por mesa do Cabana Burger (via /partner/qrcodes)
