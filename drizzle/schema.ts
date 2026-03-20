@@ -198,6 +198,24 @@ export type GameScore = typeof gameScores.$inferSelect;
 export type InsertGameScore = typeof gameScores.$inferInsert;
 
 /**
+ * Partner users - login exclusivo por restaurante (sem OAuth)
+ */
+export const partnerUsers = mysqlTable("partner_users", {
+  id: int("id").autoincrement().primaryKey(),
+  restaurantId: int("restaurantId").notNull(),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  displayName: varchar("displayName", { length: 200 }).notNull(),
+  role: mysqlEnum("role", ["partner", "master"]).default("partner").notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PartnerUser = typeof partnerUsers.$inferSelect;
+export type InsertPartnerUser = typeof partnerUsers.$inferInsert;
+
+/**
  * App settings (Pix key, webhook URL, WhatsApp number, etc.)
  */
 export const appSettings = mysqlTable("app_settings", {

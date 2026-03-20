@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, username, displayName, role, LEFT(passwordHash, 20) as hash_preview FROM partner_users;\nUPDATE partner_users SET passwordHash = 'c998dec7feb80906604e80829f17a1cd09177ccbfbc5c0135eeff358ef41cb67' WHERE username = 'estevao';\nUPDATE partner_users SET passwordHash = '130ea897bf1e44932b87195b2b6c439a2d4f59f996f5fc317284d6331371fed5' WHERE username = 'topdog';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute SELECT id, username, displayName, role, LEFT(passwordHash, 20) as hash_preview FROM partner_users;\nUPDATE partner_users SET passwordHash = 'c998dec7feb80906604e80829f17a1cd09177ccbfbc5c0135eeff358ef41cb67' WHERE username = 'estevao';\nUPDATE partner_users SET passwordHash = '130ea897bf1e44932b87195b2b6c439a2d4f59f996f5fc317284d6331371fed5' WHERE username = 'topdog';",
+  "rows": [
+    {
+      "id": "1",
+      "username": "organic",
+      "displayName": "Organic In The Box",
+      "role": "partner",
+      "hash_preview": "497e5a25f2746db46f7a"
+    },
+    {
+      "id": "2",
+      "username": "topdog",
+      "displayName": "Top Dog Brasil",
+      "role": "partner",
+      "hash_preview": "130ea897bf1e44932b87"
+    },
+    {
+      "id": "3",
+      "username": "laguapa",
+      "displayName": "La Guapa",
+      "role": "partner",
+      "hash_preview": "a1d38c1809ebb754c9d8"
+    },
+    {
+      "id": "4",
+      "username": "elpatron",
+      "displayName": "El Patron",
+      "role": "partner",
+      "hash_preview": "83d2bdb1bcb61ee684f5"
+    },
+    {
+      "id": "5",
+      "username": "estevao",
+      "displayName": "Estevão - Master",
+      "role": "master",
+      "hash_preview": "1579eaa99e7d35e62b63"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tdisplayName\trole\thash_preview\n1\torganic\tOrganic In The Box\tpartner\t497e5a25f2746db46f7a\n2\ttopdog\tTop Dog Brasil\tpartner\t130ea897bf1e44932b87\n3\tlaguapa\tLa Guapa\tpartner\ta1d38c1809ebb754c9d8\n4\telpatron\tEl Patron\tpartner\t83d2bdb1bcb61ee684f5\n5\testevao\tEstevão - Master\tmaster\t1579eaa99e7d35e62b63\n",
+  "stderr": "",
+  "execution_time_ms": 84
+}

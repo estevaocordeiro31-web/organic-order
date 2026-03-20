@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants, partnerUsers } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -390,6 +390,103 @@ export async function getAllSettings() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(appSettings);
+}
+
+// ===== PARTNER USERS =====
+
+export async function createPartnerUser(data: {
+  restaurantId: number;
+  username: string;
+  passwordHash: string;
+  displayName: string;
+  role?: "partner" | "master";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(partnerUsers).values(data).$returningId();
+  return result.id;
+}
+
+export async function getPartnerUserByUsername(username: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(partnerUsers).where(eq(partnerUsers.username, username)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getPartnerUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(partnerUsers).where(eq(partnerUsers.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getOrdersByRestaurant(restaurantId: number, statusFilter?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query;
+  if (statusFilter && statusFilter !== "all") {
+    query = db.select().from(orders)
+      .where(and(
+        eq(orders.restaurantId, restaurantId),
+        eq(orders.status, statusFilter as any)
+      ))
+      .orderBy(desc(orders.createdAt));
+  } else {
+    query = db.select().from(orders)
+      .where(eq(orders.restaurantId, restaurantId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  const orderList = await query;
+  const result = [];
+  for (const order of orderList) {
+    const items = await db.select({
+      id: orderItems.id,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.unitPrice,
+      notes: orderItems.notes,
+      menuItemId: orderItems.menuItemId,
+      nameEn: menuItems.nameEn,
+      namePt: menuItems.namePt,
+    })
+      .from(orderItems)
+      .innerJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+      .where(eq(orderItems.orderId, order.id));
+    const tableInfo = await db.select().from(tables).where(eq(tables.id, order.tableId)).limit(1);
+    result.push({ ...order, table: tableInfo[0] || null, items });
+  }
+  return result;
+}
+
+export async function getRestaurantStats(restaurantId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, pending: 0, preparing: 0, ready: 0, delivered: 0, revenue: 0 };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const allOrders = await db.select().from(orders).where(eq(orders.restaurantId, restaurantId));
+  const todayOrders = allOrders.filter(o => new Date(o.createdAt) >= today);
+  return {
+    total: todayOrders.length,
+    pending: todayOrders.filter(o => o.status === "pending").length,
+    preparing: todayOrders.filter(o => o.status === "preparing").length,
+    ready: todayOrders.filter(o => o.status === "ready").length,
+    delivered: todayOrders.filter(o => o.status === "delivered").length,
+    revenue: todayOrders.filter(o => o.status === "delivered").reduce((sum, o) => sum + parseFloat(o.totalAmount), 0),
+  };
+}
+
+export async function getAllRestaurantsWithStats() {
+  const db = await getDb();
+  if (!db) return [];
+  const allRestaurants = await db.select().from(restaurants).where(eq(restaurants.active, true));
+  const result = [];
+  for (const restaurant of allRestaurants) {
+    const stats = await getRestaurantStats(restaurant.id);
+    result.push({ ...restaurant, stats });
+  }
+  return result;
 }
 
 export async function getTodayOrderStats() {

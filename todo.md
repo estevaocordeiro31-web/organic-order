@@ -195,3 +195,18 @@
 - [x] Rotas /topdog, /laguapa, /elpatron ativas no app
 - [x] Tela de seleção de parceiros com imagens reais dos pratos
 - [x] 65 testes passando (18 novos testes de multi-tenant)
+
+## v9 - Dashboards Isolados por Parceiro
+- [x] Tabela `partner_users` no banco: login exclusivo por restaurante
+- [x] Seed: criar usuários admin para cada parceiro (topdog, laguapa, elpatron, organic)
+- [x] Procedure tRPC: login de parceiro com JWT isolado por restaurant_id
+- [x] Procedure tRPC: listar pedidos filtrados por restaurant_id do usuário logado
+- [x] Procedure tRPC: atualizar status de pedido (apenas do próprio restaurante)
+- [x] Página /partner/login: tela de login para parceiros
+- [x] Página /partner/dashboard: dashboard isolado com pedidos do próprio restaurante
+- [x] Tema visual do dashboard por parceiro (cores do restaurante)
+- [x] QR Codes exclusivos por mesa de cada restaurante (/topdog?table=1, etc.)
+- [x] Página /master: painel master do Estevão com todos os restaurantes
+- [x] Visão consolidada: pedidos de todos os restaurantes em tempo real
+- [x] Filtro por restaurante no painel master
+- [x] Métricas por restaurante: total de pedidos, faturamento, alunos ativos

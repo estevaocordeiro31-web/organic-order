@@ -43,6 +43,13 @@
       "when": 1773322062370,
       "tag": "0005_cold_phil_sheldon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1774033209119,
+      "tag": "0006_nice_hex",
+      "breakpoints": true
     }
   ]
 }

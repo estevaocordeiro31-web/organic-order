@@ -28,9 +28,50 @@ import {
   getAllSettings,
   getRestaurantBySlug,
   getAllRestaurants,
+  getPartnerUserByUsername,
+  getPartnerUserById,
+  getOrdersByRestaurant,
+  getRestaurantStats,
+  getAllRestaurantsWithStats,
 } from "./db";
+import * as crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
+
+const PARTNER_JWT_SECRET = process.env.JWT_SECRET || "partner-secret-key";
+
+function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password + "imaind-salt").digest("hex");
+}
+
+function signPartnerToken(payload: { id: number; restaurantId: number; role: string; username: string }): string {
+  return jwt.sign(payload, PARTNER_JWT_SECRET, { expiresIn: "7d" });
+}
+
+function verifyPartnerToken(token: string): { id: number; restaurantId: number; role: string; username: string } | null {
+  try {
+    return jwt.verify(token, PARTNER_JWT_SECRET) as any;
+  } catch {
+    return null;
+  }
+}
+
+const partnerProcedure = publicProcedure.use(async ({ ctx, next }) => {
+  const authHeader = ctx.req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token) throw new TRPCError({ code: "UNAUTHORIZED", message: "Partner token required" });
+  const payload = verifyPartnerToken(token);
+  if (!payload) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired token" });
+  const partnerUser = await getPartnerUserById(payload.id);
+  if (!partnerUser || !partnerUser.active) throw new TRPCError({ code: "UNAUTHORIZED", message: "Partner account not found" });
+  return next({ ctx: { ...ctx, partner: partnerUser } });
+});
+
+const masterProcedure = partnerProcedure.use(({ ctx, next }) => {
+  if ((ctx as any).partner.role !== "master") throw new TRPCError({ code: "FORBIDDEN", message: "Master access required" });
+  return next({ ctx });
+});
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -299,6 +340,98 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await setSetting(input.key, input.value);
         return { success: true };
+      }),
+  }),
+
+  // ===== PARTNER ROUTES (isolated per restaurant) =====
+  partner: router({
+    // Login sem OAuth - retorna JWT
+    login: publicProcedure
+      .input(z.object({
+        username: z.string().min(1),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const user = await getPartnerUserByUsername(input.username);
+        if (!user || !user.active) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        const expectedHash = hashPassword(input.password);
+        if (user.passwordHash !== expectedHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        const token = signPartnerToken({
+          id: user.id,
+          restaurantId: user.restaurantId,
+          role: user.role,
+          username: user.username,
+        });
+        // Get restaurant info
+        const allRestaurants = await getAllRestaurants();
+        const restaurant = allRestaurants.find(r => r.id === user.restaurantId);
+        return { token, user: { id: user.id, username: user.username, displayName: user.displayName, role: user.role, restaurantId: user.restaurantId }, restaurant };
+      }),
+
+    // Get current partner info (validate token)
+    me: partnerProcedure.query(async ({ ctx }) => {
+      const partner = (ctx as any).partner;
+      const allRestaurants = await getAllRestaurants();
+      const restaurant = allRestaurants.find((r: any) => r.id === partner.restaurantId);
+      return { partner, restaurant };
+    }),
+
+    // Get orders for this partner's restaurant only
+    orders: partnerProcedure
+      .input(z.object({ status: z.string().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        const restaurantId = partner.role === "master" ? undefined : partner.restaurantId;
+        if (restaurantId) {
+          return getOrdersByRestaurant(restaurantId, input?.status);
+        }
+        return getOrdersWithItems(input?.status);
+      }),
+
+    // Update order status (only own restaurant)
+    updateOrderStatus: partnerProcedure
+      .input(z.object({
+        orderId: z.number(),
+        status: z.enum(["pending", "preparing", "ready", "delivered", "cancelled"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const partner = (ctx as any).partner;
+        // Verify order belongs to this restaurant
+        if (partner.role !== "master") {
+          const restaurantOrders = await getOrdersByRestaurant(partner.restaurantId);
+          const order = restaurantOrders.find((o: any) => o.id === input.orderId);
+          if (!order) throw new TRPCError({ code: "FORBIDDEN", message: "Order not found in your restaurant" });
+        }
+        await updateOrderStatus(input.orderId, input.status);
+        return { success: true };
+      }),
+
+    // Stats for this partner's restaurant
+    stats: partnerProcedure.query(async ({ ctx }) => {
+      const partner = (ctx as any).partner;
+      return getRestaurantStats(partner.restaurantId);
+    }),
+  }),
+
+  // ===== MASTER ROUTES (Estevão - sees all restaurants) =====
+  master: router({
+    // All restaurants with stats
+    overview: masterProcedure.query(async () => {
+      return getAllRestaurantsWithStats();
+    }),
+
+    // All orders across all restaurants
+    allOrders: masterProcedure
+      .input(z.object({ restaurantId: z.number().optional(), status: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        if (input?.restaurantId) {
+          return getOrdersByRestaurant(input.restaurantId, input.status);
+        }
+        return getOrdersWithItems(input?.status);
       }),
   }),
 });
