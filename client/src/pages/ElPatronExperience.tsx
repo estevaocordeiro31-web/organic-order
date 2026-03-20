@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight, Flame } from "lucide-react";
+import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight, Flame, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ExperienceFeedback } from "@/components/ExperienceFeedback";
+import PartnerVoiceGame from "@/components/PartnerVoiceGame";
+import PartnerQASimulation from "@/components/PartnerQASimulation";
+import { getRestaurantVoiceConfig } from "@/lib/restaurantVoiceData";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 const EP_HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/elpatron-hero-tacos-NZjSGhLqAKFr2Nt6x5xArR.png";
@@ -24,7 +27,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "menu" | "cart" | "order" | "done" | "feedback";
+type Step = "menu" | "cart" | "order" | "done" | "feedback" | "voice" | "qa";
 
 const ITEM_IMAGES: Record<string, string> = {
   "Barbacoa Burrito": EP_BURRITO,
@@ -59,6 +62,7 @@ export default function ElPatronExperience() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const createOrderMutation = trpc.order.create.useMutation();
+  const voiceConfig = useMemo(() => getRestaurantVoiceConfig("elpatron"), []);
 
   function addToCart(item: typeof items[0]) {
     setCart(prev => {
@@ -331,34 +335,76 @@ export default function ElPatronExperience() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center" style={{ background: "linear-gradient(180deg, #0f0500 0%, #0a0300 100%)" }}>
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200 }} className="text-8xl mb-6">🌮</motion.div>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <h2 className="text-2xl font-black text-orange-100 mb-2">{lang === "en" ? "Order placed!" : "¡Pedido enviado!"}</h2>
-        <p className="text-orange-100/50 text-sm mb-6">{lang === "en" ? "Your Mexican feast is being prepared! 🇲🇽🔥" : "¡Tu festín mexicano está siendo preparado! 🇲🇽🔥"}</p>
-        <div className="flex gap-3 justify-center">
-          <Button onClick={() => setStep("feedback")}
-            className="border-0 text-white" style={{ background: "linear-gradient(135deg, #dc2626, #ea580c)" }}>
-            {lang === "en" ? "Rate experience" : "Calificar experiencia"}
-          </Button>
-          <Button variant="outline" onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }} className="border-orange-900/30 text-orange-100/60 hover:text-orange-100 bg-transparent rounded-xl">
-            {lang === "en" ? "Order again" : "Pedir de nuevo"}
-          </Button>
-        </div>
-      </motion.div>
-    </div>
-  );
-
-  // ===== FEEDBACK =====
-  if (step === "feedback") {
+  // ===== VOICE ORDER =====
+  if (step === "voice" && voiceConfig) {
     return (
-      <ExperienceFeedback
+      <PartnerVoiceGame
+        lang={lang}
+        phrases={lang === "en" ? voiceConfig.phrasesEn : voiceConfig.phrasesEs}
+        accentColor={voiceConfig.accentColor}
+        bgColor={voiceConfig.bgColor}
         restaurantName="El Patrón"
-        restaurantId={RESTAURANT_ID}
-        language={lang}
-        onClose={() => navigate("/")}
+        waiterEmoji={voiceConfig.waiterEmoji}
+        onBack={() => setStep("menu")}
       />
     );
   }
+
+  // ===== QA SIMULATION =====
+  if (step === "qa" && voiceConfig) {
+    return (
+      <PartnerQASimulation
+        lang={lang}
+        questions={lang === "en" ? voiceConfig.qaEn : voiceConfig.qaEs}
+        accentColor={voiceConfig.accentColor}
+        bgColor={voiceConfig.bgColor}
+        restaurantName="El Patrón"
+        waiterEmoji={voiceConfig.waiterEmoji}
+        waiterName={lang === "en" ? voiceConfig.waiterNameEn : voiceConfig.waiterNameEs}
+        welcomeMessage={lang === "en" ? voiceConfig.welcomeEn : voiceConfig.welcomeEs}
+        onBack={() => setStep("menu")}
+      />
+    );
+  }
+
+  // ===== DONE =====
+  if (step === "done") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center" style={{ background: "linear-gradient(180deg, #0f0500 0%, #0a0300 100%)" }}>
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200 }} className="text-8xl mb-6">🌮</motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <h2 className="text-2xl font-black text-orange-100 mb-2">{lang === "en" ? "Order placed!" : "¡Pedido enviado!"}</h2>
+          <p className="text-orange-100/50 text-sm mb-6">{lang === "en" ? "Your Mexican feast is being prepared! 🇲🇽🔥" : "¡Tu festín mexicano está siendo preparado! 🇲🇽🔥"}</p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Button onClick={() => setStep("feedback")} className="border-0 text-white" style={{ background: "linear-gradient(135deg, #dc2626, #ea580c)" }}>
+              {lang === "en" ? "Rate experience" : "Calificar experiencia"}
+            </Button>
+            {voiceMode && (
+              <>
+                <Button onClick={() => setStep("voice")} className="bg-blue-600 hover:bg-blue-500 text-white border-0 rounded-xl">
+                  🎙️ {lang === "en" ? "Voice Practice" : "Práctica de Voz"}
+                </Button>
+                <Button onClick={() => setStep("qa")} className="bg-purple-600 hover:bg-purple-500 text-white border-0 rounded-xl">
+                  💬 {lang === "en" ? "Q&A Simulation" : "Simulación"}
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }} className="border-orange-900/30 text-orange-100/60 hover:text-orange-100 bg-transparent rounded-xl">
+              {lang === "en" ? "Order again" : "Pedir de nuevo"}
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ===== FEEDBACK =====
+  return (
+    <ExperienceFeedback
+      restaurantName="El Patrón"
+      restaurantId={RESTAURANT_ID}
+      language={lang}
+      onClose={() => navigate("/")}
+    />
+  );
 }

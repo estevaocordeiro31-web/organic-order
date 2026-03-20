@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Star, Flame, ChevronLeft, Plus, Minus, X, Zap } from "lucide-react";
 import { ExperienceFeedback } from "@/components/ExperienceFeedback";
+import PartnerVoiceGame from "@/components/PartnerVoiceGame";
+import PartnerQASimulation from "@/components/PartnerQASimulation";
+import { getRestaurantVoiceConfig } from "@/lib/restaurantVoiceData";
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/cabana-hero-burger-iftcYRCSCCQwPF6cjbRChe.webp";
 const WAGYU_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/cabana-wagyu-burger-Af6GrEr8odKcKUP3fmaCJP.webp";
@@ -47,6 +50,8 @@ export default function CabanaBurgerExperience() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [activeTab, setActiveTab] = useState<"menu" | "games" | "facts">("menu");
+  const [voiceStep, setVoiceStep] = useState<"none" | "voice" | "qa">("none");
+  const voiceConfig = useMemo(() => getRestaurantVoiceConfig("cabana"), []);
 
   const { data: restaurantMenu } = trpc.restaurant.menu.useQuery({ restaurantId: RESTAURANT_ID });
   const categories = restaurantMenu?.categories;
@@ -142,6 +147,38 @@ export default function CabanaBurgerExperience() {
     ]},
   ];
 
+  // ===== VOICE ORDER =====
+  if (voiceStep === "voice" && voiceConfig) {
+    return (
+      <PartnerVoiceGame
+        lang={lang}
+        phrases={lang === "en" ? voiceConfig.phrasesEn : voiceConfig.phrasesEs}
+        accentColor="#d97706"
+        bgColor="#0a0602"
+        restaurantName="Cabana Burger"
+        waiterEmoji="🍔"
+        onBack={() => setVoiceStep("none")}
+      />
+    );
+  }
+
+  // ===== QA SIMULATION =====
+  if (voiceStep === "qa" && voiceConfig) {
+    return (
+      <PartnerQASimulation
+        lang={lang}
+        questions={lang === "en" ? voiceConfig.qaEn : voiceConfig.qaEs}
+        accentColor="#d97706"
+        bgColor="#0a0602"
+        restaurantName="Cabana Burger"
+        waiterEmoji="🍔"
+        waiterName={lang === "en" ? voiceConfig.waiterNameEn : voiceConfig.waiterNameEs}
+        welcomeMessage={lang === "en" ? voiceConfig.welcomeEn : voiceConfig.welcomeEs}
+        onBack={() => setVoiceStep("none")}
+      />
+    );
+  }
+
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -156,9 +193,9 @@ export default function CabanaBurgerExperience() {
               : `¡Tu pedido #${orderId} está siendo preparado!`}
           </p>
           <p className="text-yellow-400/70 mb-8">
-            {lang === "en" ? "Table" : "Mesa"} {tableNumber} • Cabana Burger Jundiaí
+            {lang === "en" ? "Table" : "Mesa"} {tableNumber} • Cabana Burger Jundiai
           </p>
-          <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-2xl p-6 mb-8">
+          <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-2xl p-6 mb-6">
             <p className="text-yellow-300 font-bold text-lg mb-2">
               {lang === "en" ? "🎯 Practice while you wait!" : "🎯 ¡Practica mientras esperas!"}
             </p>
@@ -171,10 +208,20 @@ export default function CabanaBurgerExperience() {
           <div className="flex gap-3 justify-center flex-wrap">
             <Button
               onClick={() => setShowFeedback(true)}
-              className="bg-yellow-400 text-black hover:bg-yellow-300 font-black text-lg px-8 py-4 rounded-full"
+              className="bg-yellow-400 text-black hover:bg-yellow-300 font-black px-6 py-3 rounded-full"
             >
               {lang === "en" ? "Rate Experience" : "Calificar Experiencia"}
             </Button>
+            {voiceMode && (
+              <>
+                <Button onClick={() => setVoiceStep("voice")} className="bg-blue-600 hover:bg-blue-500 text-white border-0 rounded-full">
+                  🎙️ {lang === "en" ? "Voice Practice" : "Práctica de Voz"}
+                </Button>
+                <Button onClick={() => setVoiceStep("qa")} className="bg-purple-600 hover:bg-purple-500 text-white border-0 rounded-full">
+                  💬 {lang === "en" ? "Q&A Simulation" : "Simulación"}
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               onClick={() => setLocation("/")}

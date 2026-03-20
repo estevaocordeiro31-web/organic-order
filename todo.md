@@ -227,11 +227,11 @@
 - [ ] La Guapa: frases de pedido em EN/ES (empanadas, sabores, combos)
 - [ ] El Patron: frases de pedido em EN/ES (tacos, burritos, nachos)
 - [ ] Cabana Burger: frases de pedido em EN/ES (burgers, Wagyu, shakes)
-- [ ] Integrar VoiceOrder no TopDogExperience
-- [ ] Integrar VoiceOrder no LaGuapaExperience
-- [ ] Integrar VoiceOrder no ElPatronExperience
-- [ ] Integrar VoiceOrder no CabanaBurgerExperience
-- [ ] Integrar QASimulation nos 4 novos parceiros
+- [x] Integrar VoiceOrder no TopDogExperience
+- [x] Integrar VoiceOrder no LaGuapaExperience
+- [x] Integrar VoiceOrder no ElPatronExperience
+- [x] Integrar VoiceOrder no CabanaBurgerExperience
+- [x] Integrar QASimulation nos 4 novos parceiros
 - [ ] Garçons virtuais com voz EN/ES para cada parceiro
 
 ## v12 - Tela de Feedback + Captação de Leads inFlux
@@ -271,3 +271,18 @@
 - [x] Integrar consultores do banco no ExperienceFeedback (substituir hardcoded Lucas/Vicky)
 - [x] Fallback: se nenhum consultor configurado, usar Lucas e Vicky padrão
 - [x] Testes vitest para as novas procedures
+
+## v15 - Modo Voz nos 4 Novos Parceiros
+
+- [x] Criar vocabulário EN/ES para Top Dog Brasil (hot dogs, smash burgers, fries, drinks)
+- [x] Criar vocabulário EN/ES para La Guapa (empanadas, sabores, combos, drinks)
+- [x] Criar vocabulário EN/ES para El Patron (tacos, burritos, nachos, quesadillas)
+- [x] Criar vocabulário EN/ES para Cabana Burger (burgers, Wagyu, truffle, smash, shakes)
+- [x] Criar hook useRestaurantVoice com vocabulário específico por restaurantSlug
+- [x] Integrar VoiceOrder no TopDogExperience
+- [x] Integrar VoiceOrder no LaGuapaExperience
+- [x] Integrar VoiceOrder no ElPatronExperience
+- [x] Integrar VoiceOrder no CabanaBurgerExperience
+- [x] Integrar QASimulation nos 4 novos parceiros
+- [x] Garçons virtuais com frases de boas-vindas específicas por parceiro (EN/ES)
+- [x] Testes vitest para o vocabulário e hook de voz

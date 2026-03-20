@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Mic, ShoppingCart, Plus, Minus, ChevronRight, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ExperienceFeedback } from "@/components/ExperienceFeedback";
+import PartnerVoiceGame from "@/components/PartnerVoiceGame";
+import PartnerQASimulation from "@/components/PartnerQASimulation";
+import { getRestaurantVoiceConfig } from "@/lib/restaurantVoiceData";
 
 const IMAIND_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/imaind-logo-main-Fx4X8HBTwPWV3N6Pfhh9r9.png";
 const TOPDOG_HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663292442852/Evw5QZUwinvym6RWSTYRUE/topdog-hero-hotdog-TupycygunEJD2NAKgy66sf.webp";
@@ -25,7 +28,7 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type Step = "menu" | "cart" | "order" | "done" | "feedback";
+type Step = "menu" | "cart" | "order" | "done" | "feedback" | "voice" | "qa";
 
 export default function TopDogExperience() {
   const [, navigate] = useLocation();
@@ -52,6 +55,7 @@ export default function TopDogExperience() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const createOrderMutation = trpc.order.create.useMutation();
+  const voiceConfig = useMemo(() => getRestaurantVoiceConfig("topdog"), []);
 
   function addToCart(item: typeof items[0]) {
     setCart(prev => {
@@ -100,6 +104,38 @@ export default function TopDogExperience() {
     }
   }
 
+  // ===== VOICE ORDER =====
+  if (step === "voice" && voiceConfig) {
+    return (
+      <PartnerVoiceGame
+        lang={lang}
+        phrases={lang === "en" ? voiceConfig.phrasesEn : voiceConfig.phrasesEs}
+        accentColor={voiceConfig.accentColor}
+        bgColor={voiceConfig.bgColor}
+        restaurantName="Top Dog Brasil"
+        waiterEmoji={voiceConfig.waiterEmoji}
+        onBack={() => setStep("menu")}
+      />
+    );
+  }
+
+  // ===== QA SIMULATION =====
+  if (step === "qa" && voiceConfig) {
+    return (
+      <PartnerQASimulation
+        lang={lang}
+        questions={lang === "en" ? voiceConfig.qaEn : voiceConfig.qaEs}
+        accentColor={voiceConfig.accentColor}
+        bgColor={voiceConfig.bgColor}
+        restaurantName="Top Dog Brasil"
+        waiterEmoji={voiceConfig.waiterEmoji}
+        waiterName={lang === "en" ? voiceConfig.waiterNameEn : voiceConfig.waiterNameEs}
+        welcomeMessage={lang === "en" ? voiceConfig.welcomeEn : voiceConfig.welcomeEs}
+        onBack={() => setStep("menu")}
+      />
+    );
+  }
+
   // ===== MENU SCREEN =====
   if (step === "menu") {
     return (
@@ -131,7 +167,16 @@ export default function TopDogExperience() {
               <h1 className="text-white font-black text-base leading-tight tracking-tight">TOP DOG BRASIL</h1>
               <p className="text-red-400 text-xs font-medium">🌭 Cachorreria Prensada · Jundiaí</p>
             </div>
-            {voiceMode && <Mic className="w-4 h-4 text-blue-400" />}
+            {voiceMode && (
+              <div className="flex gap-1">
+                <button onClick={() => setStep("voice")} className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center" title="Voice Order">
+                  <Mic className="w-3.5 h-3.5 text-blue-400" />
+                </button>
+                <button onClick={() => setStep("qa")} className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center" title="Q&A Simulation">
+                  <Zap className="w-3.5 h-3.5 text-purple-400" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Tagline */}
@@ -395,53 +440,51 @@ export default function TopDogExperience() {
   }
 
   // ===== DONE =====
-  return (
-    <div className="min-h-screen bg-[#0d0505] flex flex-col items-center justify-center px-6 text-center">
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200 }}
-        className="text-8xl mb-6"
-      >
-        🌭
-      </motion.div>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <h2 className="text-2xl font-black text-white mb-2">
-          {lang === "en" ? "Order placed!" : "¡Pedido enviado!"}
-        </h2>
-        <p className="text-white/50 text-sm mb-6">
-          {lang === "en"
-            ? "Your hot dog is being prepared. The simple done right! 🔥"
-            : "Tu hot dog está siendo preparado. ¡Lo simple hecho bien! 🔥"}
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Button
-            onClick={() => setStep("feedback")}
-            className="bg-red-600 hover:bg-red-500 text-white border-0 rounded-xl"
-          >
-            {lang === "en" ? "Rate experience" : "Calificar experiencia"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }}
-            className="border-white/20 text-white/60 hover:text-white bg-transparent rounded-xl"
-          >
-            {lang === "en" ? "Order again" : "Pedir de nuevo"}
-          </Button>
-        </div>
-      </motion.div>
-    </div>
-  );
-
-  // ===== FEEDBACK =====
-  if (step === "feedback") {
+  if (step === "done") {
     return (
-      <ExperienceFeedback
-        restaurantName="Top Dog Brasil"
-        restaurantId={RESTAURANT_ID}
-        language={lang}
-        onClose={() => navigate("/")}
-      />
+      <div className="min-h-screen bg-[#0d0505] flex flex-col items-center justify-center px-6 text-center">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200 }} className="text-8xl mb-6">
+          🌭
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <h2 className="text-2xl font-black text-white mb-2">
+            {lang === "en" ? "Order placed!" : "¡Pedido enviado!"}
+          </h2>
+          <p className="text-white/50 text-sm mb-6">
+            {lang === "en"
+              ? "Your hot dog is being prepared. The simple done right! 🔥"
+              : "Tu hot dog está siendo preparado. ¡Lo simple hecho bien! 🔥"}
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Button onClick={() => setStep("feedback")} className="bg-red-600 hover:bg-red-500 text-white border-0 rounded-xl">
+              {lang === "en" ? "Rate experience" : "Calificar experiencia"}
+            </Button>
+            {voiceMode && (
+              <>
+                <Button onClick={() => setStep("voice")} className="bg-blue-600 hover:bg-blue-500 text-white border-0 rounded-xl">
+                  🎙️ {lang === "en" ? "Voice Practice" : "Práctica de Voz"}
+                </Button>
+                <Button onClick={() => setStep("qa")} className="bg-purple-600 hover:bg-purple-500 text-white border-0 rounded-xl">
+                  💬 {lang === "en" ? "Q&A Simulation" : "Simulación"}
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => { setCart([]); setStep("menu"); setStudentName(""); setSelectedTable(null); }} className="border-white/20 text-white/60 hover:text-white bg-transparent rounded-xl">
+              {lang === "en" ? "Order again" : "Pedir de nuevo"}
+            </Button>
+          </div>
+        </motion.div>
+      </div>
     );
   }
+
+  // ===== FEEDBACK =====
+  return (
+    <ExperienceFeedback
+      restaurantName="Top Dog Brasil"
+      restaurantId={RESTAURANT_ID}
+      language={lang}
+      onClose={() => navigate("/")}
+    />
+  );
 }
