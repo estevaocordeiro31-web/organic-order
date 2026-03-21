@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Volume2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Volume2, VolumeX, ArrowLeft, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { QAPair } from "@/lib/restaurantVoiceData";
+import { useTTS } from "@/hooks/useTTS";
 
 export type PartnerQASimulationProps = {
   lang: "en" | "es";
@@ -39,26 +40,16 @@ export default function PartnerQASimulation({
   const [showResult, setShowResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [chatHistory, setChatHistory] = useState<{ role: "waiter" | "student"; text: string }[]>([]);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const { speak, isSpeaking, isMuted, toggleMute, isSupported: ttsSupported } = useTTS();
 
   const currentQ = questions[currentIndex];
 
-  const speakText = (text: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = isEnglish ? "en-US" : "es-ES";
-      utterance.rate = 0.85;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
+  const speakText = (text: string) => speak(text, lang, 0.85);
 
   const startRecording = () => {
     setTranscript("");
@@ -270,6 +261,17 @@ export default function PartnerQASimulation({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {ttsSupported && (
+            <button
+              onClick={toggleMute}
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+              title={isMuted ? (isEnglish ? "Unmute" : "Activar sonido") : (isEnglish ? "Mute" : "Silenciar")}
+            >
+              {isMuted
+                ? <VolumeX className="w-4 h-4 text-white/50" />
+                : <Volume2 className="w-4 h-4" style={{ color: isSpeaking ? accentColor : "white" }} />}
+            </button>
+          )}
           <Star className="w-4 h-4" style={{ color: accentColor }} />
           <span className="text-white font-bold text-sm">{score}/{questions.length}</span>
         </div>

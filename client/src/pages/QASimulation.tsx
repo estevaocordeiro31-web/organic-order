@@ -1,11 +1,12 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocation, useSearch } from "wouter";
-import { ArrowLeft, Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, MessageCircle, Sparkles, Volume2 } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, MessageCircle, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTTS } from "@/hooks/useTTS";
 
 const GABI_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/DpukkKpvgfOJdjGU.png";
 const CRIS_UNIFORM = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663292442852/ERTewrUOkIDhpEGI.png";
@@ -60,11 +61,11 @@ export default function QASimulation() {
   const [showResult, setShowResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [chatHistory, setChatHistory] = useState<{ role: "waiter" | "student"; text: string }[]>([]);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const { speak, isSpeaking, isMuted, toggleMute, isSupported: ttsSupported } = useTTS();
 
   const [waiter] = useState(() => Math.random() > 0.5 ? "gabi" : "cris");
   const waiterImg = waiter === "gabi" ? GABI_UNIFORM : CRIS_UNIFORM;
@@ -73,17 +74,7 @@ export default function QASimulation() {
   const questions = useMemo(() => isEnglish ? qaEnglish : qaSpanish, [isEnglish]);
   const currentQ = questions[currentIndex];
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = isEnglish ? "en-US" : "es-ES";
-      utterance.rate = 0.85;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
+  const speakText = (text: string) => speak(text, lang, 0.85);
 
   const startRecording = () => {
     setTranscript("");
@@ -353,9 +344,22 @@ export default function QASimulation() {
           <Badge variant="outline" className="text-xs">
             {currentIndex + 1}/{questions.length}
           </Badge>
-          <Badge variant="secondary" className="text-xs">
-            <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" /> {score}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {ttsSupported && (
+              <button
+                onClick={toggleMute}
+                className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+                title={isMuted ? (isEnglish ? "Unmute" : "Activar sonido") : (isEnglish ? "Mute" : "Silenciar")}
+              >
+                {isMuted
+                  ? <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
+                  : <Volume2 className={`w-3.5 h-3.5 ${isSpeaking ? "text-primary" : "text-muted-foreground"}`} />}
+              </button>
+            )}
+            <Badge variant="secondary" className="text-xs">
+              <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" /> {score}
+            </Badge>
+          </div>
         </div>
 
         {/* Progress */}

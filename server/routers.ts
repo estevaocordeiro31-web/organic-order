@@ -39,6 +39,9 @@ import {
   updateConsultant,
   deleteConsultant,
   getConsultantById,
+  getLeadsFiltered,
+  getAllStudentProgress,
+  getStudentDetail,
 } from "./db";
 import * as crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -587,6 +590,56 @@ export const appRouter = router({
           return getOrdersByRestaurant(input.restaurantId, input.status);
         }
         return getOrdersWithItems(input?.status);
+      }),
+
+    // Leads with filters
+    leads: masterProcedure
+      .input(z.object({
+        restaurantId: z.number().optional(),
+        language: z.enum(["en", "es"]).optional(),
+        interested: z.boolean().optional(),
+        ratingMin: z.number().optional(),
+        ratingMax: z.number().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getLeadsFiltered({
+          restaurantId: input?.restaurantId,
+          language: input?.language,
+          interested: input?.interested,
+          ratingMin: input?.ratingMin,
+          ratingMax: input?.ratingMax,
+          dateFrom: input?.dateFrom ? new Date(input.dateFrom) : undefined,
+          dateTo: input?.dateTo ? new Date(input.dateTo) : undefined,
+        });
+      }),
+
+    // Student progress
+    studentProgress: masterProcedure
+      .input(z.object({
+        restaurantId: z.number().optional(),
+        language: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getAllStudentProgress({
+          restaurantId: input?.restaurantId,
+          language: input?.language,
+          dateFrom: input?.dateFrom ? new Date(input.dateFrom) : undefined,
+          dateTo: input?.dateTo ? new Date(input.dateTo) : undefined,
+        });
+      }),
+
+    // Student detail
+    studentDetail: masterProcedure
+      .input(z.object({
+        studentName: z.string(),
+        restaurantId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return getStudentDetail(input.studentName, input.restaurantId);
       }),
   }),
 });

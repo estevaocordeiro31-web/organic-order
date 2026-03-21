@@ -286,3 +286,38 @@
 - [x] Integrar QASimulation nos 4 novos parceiros
 - [x] Garçons virtuais com frases de boas-vindas específicas por parceiro (EN/ES)
 - [x] Testes vitest para o vocabulário e hook de voz
+
+## v16 - Painel de Leads no Master Dashboard
+
+- [x] Procedure tRPC: listar leads com filtros (restaurante, período, interesse)
+- [x] Procedure tRPC: exportar leads como CSV
+- [x] UI: aba "Leads" no MasterDashboard com tabela paginada
+- [x] Filtros: por restaurante, idioma, nota (1-5), período (hoje/semana/mês)
+- [x] Colunas: nome, telefone, restaurante, idioma, nota, consultor, data, interesse
+- [x] Botão exportar CSV (download direto no browser)
+- [x] Badge com contagem de novos leads desde último acesso
+- [x] Testes vitest para as procedures de leads
+
+## v17 - Relatório de Progresso por Aluno
+
+- [x] Procedure tRPC: listar scores agrupados por aluno (nome, total XP, atividades)
+- [x] Procedure tRPC: detalhar progresso de um aluno (por atividade, por sessão)
+- [x] Procedure tRPC: ranking geral com filtro por restaurante
+- [x] UI: página /master/progress com lista de alunos e métricas
+- [x] Gráfico de evolução de XP ao longo do tempo (recharts)
+- [x] Detalhamento por tipo de atividade (Voice Order, Q&A, Phrase Builder)
+- [x] Top 10 expressões mais praticadas por aluno
+- [x] Filtros: por restaurante, idioma, período
+- [x] Testes vitest para as procedures de progresso
+
+## v18 - Text-to-Speech nos Garçons Virtuais
+
+- [x] Hook useTTS: wrapper da Web Speech Synthesis API
+- [x] Configurar voz EN (en-US) e ES (es-ES) por idioma
+- [x] Integrar TTS no PartnerQASimulation: garçom lê a pergunta em voz alta
+- [x] Integrar TTS no PartnerVoiceGame: garçom lê a frase de referência
+- [x] Integrar TTS no QASimulation (Organic): garçom lê a pergunta
+- [x] Integrar TTS no VoiceOrder (Organic): garçom lê a frase
+- [x] Botão de toggle mute/unmute no canto da tela
+- [x] Preferência de mute salva no localStorage
+- [x] Testes vitest para o hook useTTS

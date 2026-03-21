@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Eye, EyeOff, Volume2, ArrowLeft } from "lucide-react";
+import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Eye, EyeOff, Volume2, VolumeX, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTTS } from "@/hooks/useTTS";
 
 export type VoicePhrase = {
   id: number;
@@ -47,9 +48,9 @@ export default function PartnerVoiceGame({
   const [gameOver, setGameOver] = useState(false);
   const [showPhrase, setShowPhrase] = useState(true);
   const [recordingTimer, setRecordingTimer] = useState(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const { speak, isSpeaking, isMuted, toggleMute, isSupported: ttsSupported } = useTTS();
 
   const filteredPhrases = phrases.filter(p => p.difficulty === difficulty);
   const currentPhrase = filteredPhrases[currentIndex];
@@ -66,17 +67,7 @@ export default function PartnerVoiceGame({
     }
   }, [difficulty, currentPhrase, currentIndex]);
 
-  const speakPhrase = (text: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = isEnglish ? "en-US" : "es-ES";
-      utterance.rate = 0.85;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
+  const speakPhrase = (text: string) => speak(text, lang, 0.85);
 
   const startRecording = () => {
     setTranscript("");
@@ -311,6 +302,17 @@ export default function PartnerVoiceGame({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
+            {ttsSupported && (
+              <button
+                onClick={toggleMute}
+                className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                title={isMuted ? (isEnglish ? "Unmute" : "Activar sonido") : (isEnglish ? "Mute" : "Silenciar")}
+              >
+                {isMuted
+                  ? <VolumeX className="w-3.5 h-3.5 text-white/40" />
+                  : <Volume2 className="w-3.5 h-3.5" style={{ color: isSpeaking ? accentColor : "rgba(255,255,255,0.6)" }} />}
+              </button>
+            )}
             <Badge variant="outline" className="border-white/20 text-white/60 text-xs">
               {currentIndex + 1}/{filteredPhrases.length}
             </Badge>

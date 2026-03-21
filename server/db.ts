@@ -1,6 +1,6 @@
 import { eq, asc, desc, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants, partnerUsers, partnerConsultants, InsertPartnerConsultant } from "../drizzle/schema";
+import { InsertUser, users, menuCategories, menuItems, orders, orderItems, tables, orderingExpressions, gameScores, appSettings, restaurants, partnerUsers, partnerConsultants, InsertPartnerConsultant, leads } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -559,4 +559,128 @@ export async function getConsultantById(id: number) {
   if (!db) return null;
   const result = await db.select().from(partnerConsultants).where(eq(partnerConsultants.id, id)).limit(1);
   return result.length > 0 ? result[0] : null;
+}
+
+// ===== LEADS (MASTER) =====
+
+export async function getLeadsFiltered(filters?: {
+  restaurantId?: number;
+  language?: "en" | "es";
+  interested?: boolean;
+  ratingMin?: number;
+  ratingMax?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const all = await db.select().from(leads).orderBy(desc(leads.createdAt));
+  let result = all;
+  if (filters?.restaurantId) result = result.filter(l => l.restaurantId === filters.restaurantId);
+  if (filters?.language) result = result.filter(l => l.language === filters.language);
+  if (filters?.interested !== undefined) result = result.filter(l => l.interested === filters.interested);
+  if (filters?.ratingMin !== undefined) result = result.filter(l => l.rating !== null && l.rating! >= filters.ratingMin!);
+  if (filters?.ratingMax !== undefined) result = result.filter(l => l.rating !== null && l.rating! <= filters.ratingMax!);
+  if (filters?.dateFrom) result = result.filter(l => new Date(l.createdAt) >= filters.dateFrom!);
+  if (filters?.dateTo) result = result.filter(l => new Date(l.createdAt) <= filters.dateTo!);
+  return result;
+}
+
+// ===== STUDENT PROGRESS (MASTER) =====
+
+export async function getAllStudentProgress(filters?: {
+  restaurantId?: number;
+  language?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const all = await db.select().from(gameScores).orderBy(desc(gameScores.createdAt));
+  let filtered = all;
+  if (filters?.restaurantId) filtered = filtered.filter(s => s.restaurantId === filters.restaurantId);
+  if (filters?.language && filters.language !== "all") filtered = filtered.filter(s => s.language === filters.language);
+  if (filters?.dateFrom) filtered = filtered.filter(s => new Date(s.createdAt) >= filters.dateFrom!);
+  if (filters?.dateTo) filtered = filtered.filter(s => new Date(s.createdAt) <= filters.dateTo!);
+
+  // Aggregate by student
+  const studentMap = new Map<string, {
+    studentName: string;
+    restaurantId: number;
+    totalXP: number;
+    gamesPlayed: number;
+    voiceOrderCount: number;
+    qaSimulationCount: number;
+    phraseBuilderCount: number;
+    avgAccuracy: number;
+    lastActivity: Date;
+    sessions: typeof all;
+  }>();
+
+  for (const score of filtered) {
+    const key = `${score.studentName}:${score.restaurantId}`;
+    const existing = studentMap.get(key) || {
+      studentName: score.studentName,
+      restaurantId: score.restaurantId,
+      totalXP: 0,
+      gamesPlayed: 0,
+      voiceOrderCount: 0,
+      qaSimulationCount: 0,
+      phraseBuilderCount: 0,
+      avgAccuracy: 0,
+      lastActivity: new Date(score.createdAt),
+      sessions: [] as typeof all,
+    };
+    existing.totalXP += score.score;
+    existing.gamesPlayed += 1;
+    if (score.gameType === "voice_order") existing.voiceOrderCount += 1;
+    if (score.gameType === "qa_simulation") existing.qaSimulationCount += 1;
+    if (score.gameType === "phrase_builder") existing.phraseBuilderCount += 1;
+    if (new Date(score.createdAt) > existing.lastActivity) existing.lastActivity = new Date(score.createdAt);
+    existing.sessions.push(score);
+    studentMap.set(key, existing);
+  }
+
+  // Calculate avg accuracy per student
+  Array.from(studentMap.values()).forEach((student) => {
+    const totalQ = student.sessions.reduce((s: number, r: { totalQuestions: number }) => s + r.totalQuestions, 0);
+    const totalS = student.sessions.reduce((s: number, r: { score: number }) => s + r.score, 0);
+    student.avgAccuracy = totalQ > 0 ? Math.round((totalS / totalQ) * 100) : 0;
+  });
+
+  return Array.from(studentMap.values()).sort((a, b) => b.totalXP - a.totalXP);
+}
+
+export async function getStudentDetail(studentName: string, restaurantId?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  let all = await db.select().from(gameScores)
+    .where(eq(gameScores.studentName, studentName))
+    .orderBy(asc(gameScores.createdAt));
+  if (restaurantId) all = all.filter(s => s.restaurantId === restaurantId);
+
+  const byType = {
+    voice_order: all.filter(s => s.gameType === "voice_order"),
+    qa_simulation: all.filter(s => s.gameType === "qa_simulation"),
+    phrase_builder: all.filter(s => s.gameType === "phrase_builder"),
+  };
+
+  // XP over time (daily buckets)
+  const xpByDay: Record<string, number> = {};
+  for (const s of all) {
+    const day = new Date(s.createdAt).toISOString().split("T")[0];
+    xpByDay[day] = (xpByDay[day] || 0) + s.score;
+  }
+
+  return {
+    studentName,
+    sessions: all,
+    byType,
+    xpByDay,
+    totalXP: all.reduce((s, r) => s + r.score, 0),
+    totalGames: all.length,
+    avgAccuracy: all.length > 0
+      ? Math.round(all.reduce((s, r) => s + (r.totalQuestions > 0 ? r.score / r.totalQuestions : 0), 0) / all.length * 100)
+      : 0,
+  };
 }
