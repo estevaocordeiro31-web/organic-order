@@ -24,6 +24,7 @@ import PartnerLogin from "./pages/PartnerLogin";
 import PartnerDashboard from "./pages/PartnerDashboard";
 import MasterDashboard from "./pages/MasterDashboard";
 import PartnerQRCodes from "./pages/PartnerQRCodes";
+import StudentProfile from "./pages/StudentProfile";
 
 function Router() {
   return (
@@ -48,6 +49,7 @@ function Router() {
       <Route path={"/partner/dashboard"} component={PartnerDashboard} />
       <Route path={"/partner/qrcodes"} component={PartnerQRCodes} />
       <Route path={"/master"} component={MasterDashboard} />
+      <Route path={"/aluno/:studentName"} component={StudentProfile} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

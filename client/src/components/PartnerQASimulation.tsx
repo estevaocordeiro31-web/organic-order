@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Volume2, VolumeX, ArrowLeft, MessageCircle } from "lucide-react";
+import { Mic, MicOff, RotateCcw, Trophy, Star, ChevronRight, Volume2, VolumeX, ArrowLeft, MessageCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { QAPair } from "@/lib/restaurantVoiceData";
 import { useTTS } from "@/hooks/useTTS";
+import { trpc } from "@/lib/trpc";
 
 export type PartnerQASimulationProps = {
   lang: "en" | "es";
@@ -42,10 +43,13 @@ export default function PartnerQASimulation({
   const [gameOver, setGameOver] = useState(false);
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [chatHistory, setChatHistory] = useState<{ role: "waiter" | "student"; text: string }[]>([]);
+  const [aiFeedbackText, setAiFeedbackText] = useState<string | null>(null);
+  const [showAiFeedback, setShowAiFeedback] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { speak, isSpeaking, isMuted, toggleMute, isSupported: ttsSupported } = useTTS();
+  const aiFeedbackMutation = trpc.game.aiFeedback.useMutation();
 
   const currentQ = questions[currentIndex];
 
@@ -134,6 +138,16 @@ export default function PartnerQASimulation({
     }
 
     setChatHistory(prev => [...prev, { role: "student", text: spokenText }]);
+
+    // Request AI feedback
+    setAiFeedbackText(null);
+    setShowAiFeedback(false);
+    if (spokenText.length > 2) {
+      aiFeedbackMutation.mutate(
+        { transcript: spokenText, question: currentQ.question, expectedAnswer: currentQ.expectedAnswer, language: lang, isCorrect },
+        { onSuccess: (data) => { setAiFeedbackText(data.feedback); } }
+      );
+    }
   };
 
   const handleNext = () => {
@@ -371,6 +385,47 @@ export default function PartnerQASimulation({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* AI Feedback */}
+        {showResult && (
+          <div>
+            {aiFeedbackMutation.isPending && !aiFeedbackText && (
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10">
+                <Sparkles className="w-4 h-4 animate-pulse shrink-0" style={{ color: accentColor }} />
+                <p className="text-xs text-white/50 italic">
+                  {isEnglish ? "AI coach is analyzing..." : "El coach de IA analiza..."}
+                </p>
+              </div>
+            )}
+            {aiFeedbackText && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-2xl bg-white/5 border border-white/10"
+              >
+                <button
+                  onClick={() => setShowAiFeedback(p => !p)}
+                  className="flex items-center gap-2 w-full text-left"
+                >
+                  <Sparkles className="w-4 h-4 shrink-0" style={{ color: accentColor }} />
+                  <span className="text-xs font-semibold" style={{ color: accentColor }}>
+                    {isEnglish ? "AI Coach Feedback" : "Coach IA"}
+                  </span>
+                  <ChevronRight className={`w-3 h-3 ml-auto transition-transform`} style={{ color: accentColor, transform: showAiFeedback ? "rotate(90deg)" : "none" }} />
+                </button>
+                {showAiFeedback && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-white/70 mt-2 leading-relaxed"
+                  >
+                    {aiFeedbackText}
+                  </motion.p>
+                )}
+              </motion.div>
+            )}
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex gap-2">

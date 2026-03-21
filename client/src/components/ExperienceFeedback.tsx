@@ -149,8 +149,10 @@ export function ExperienceFeedback({ restaurantName, restaurantId, language, onC
       interested: true,
       name,
       phone,
-      // Map to legacy "lucas"/"vicky" or null for custom consultants
+      // Map to legacy "lucas"/"vicky" for default consultants
       consultant: selectedConsultant?.id === -1 ? "lucas" : selectedConsultant?.id === -2 ? "vicky" : null,
+      // Pass custom consultantId for partner-configured consultants (id > 0)
+      consultantId: selectedConsultant && selectedConsultant.id > 0 ? selectedConsultant.id : null,
     });
 
     // Open WhatsApp with pre-filled message

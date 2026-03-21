@@ -64,6 +64,13 @@
       "when": 1774044159245,
       "tag": "0008_thick_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1774098879154,
+      "tag": "0009_clammy_hellcat",
+      "breakpoints": true
     }
   ]
 }

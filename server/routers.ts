@@ -47,6 +47,7 @@ import * as crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
+import { invokeLLM } from "./_core/llm";
 import { leads, restaurants as restaurantsTable } from "../drizzle/schema";
 import { getDb } from "./db";
 import { eq } from "drizzle-orm";
@@ -112,12 +113,33 @@ export const appRouter = router({
         name: z.string().nullable().optional(),
         phone: z.string().nullable().optional(),
         consultant: z.enum(["lucas", "vicky"]).nullable().optional(),
+        consultantId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
         // Get restaurant name
         const [restaurant] = await db!.select().from(restaurantsTable).where(eq(restaurantsTable.id, input.restaurantId)).limit(1);
-        const [result] = await db!.insert(leads).values({
+
+        // Resolve consultant info (custom or default Lucas/Vicky)
+        let consultantName: string | null = null;
+        let consultantWhatsapp: string | null = null;
+        if (input.consultantId) {
+          const { partnerConsultants } = await import("../drizzle/schema");
+          const [consultant] = await db!.select().from(partnerConsultants)
+            .where(eq(partnerConsultants.id, input.consultantId)).limit(1);
+          if (consultant) {
+            consultantName = consultant.name;
+            consultantWhatsapp = consultant.whatsappNumber;
+          }
+        } else if (input.consultant === "lucas") {
+          consultantName = "Lucas";
+          consultantWhatsapp = "5511947515284";
+        } else if (input.consultant === "vicky") {
+          consultantName = "Vicky";
+          consultantWhatsapp = "5511947515284";
+        }
+
+        await db!.insert(leads).values({
           restaurantId: input.restaurantId,
           language: input.language,
           rating: input.rating ?? null,
@@ -125,15 +147,49 @@ export const appRouter = router({
           name: input.name ?? null,
           phone: input.phone ?? null,
           consultant: input.consultant ?? null,
+          consultantId: input.consultantId ?? null,
+          consultantName,
+          consultantWhatsapp,
           restaurantName: restaurant?.name ?? null,
           notified: false,
+          consultantNotified: false,
         });
-        // Notify owner when someone is interested
+
+        // Notify owner via Manus notification
         if (input.interested && input.name) {
+          const consultantLabel = consultantName ?? input.consultant ?? "não escolhido";
           await notifyOwner({
             title: `🎯 Novo Lead inFlux - ${restaurant?.name ?? "ImAInd"}`,
-            content: `Nome: ${input.name}\nTelefone: ${input.phone ?? "não informado"}\nConsultor: ${input.consultant ?? "não escolhido"}\nIdioma: ${input.language === "en" ? "Inglês" : "Espanhol"}\nNota: ${input.rating ?? "não avaliado"}/5\nRestaurante: ${restaurant?.name ?? input.restaurantId}`,
+            content: `Nome: ${input.name}\nTelefone: ${input.phone ?? "não informado"}\nConsultor: ${consultantLabel}\nIdioma: ${input.language === "en" ? "Inglês" : "Espanhol"}\nNota: ${input.rating ?? "não avaliado"}/5\nRestaurante: ${restaurant?.name ?? input.restaurantId}`,
           });
+
+          // Send WhatsApp to consultant via webhook if configured
+          const webhookUrl = await getSetting("webhook_url");
+          if (webhookUrl && consultantWhatsapp && input.name) {
+            const langLabel = input.language === "en" ? "Inglês" : "Espanhol";
+            const whatsappMsg =
+              `🎯 *Novo Lead ImAInd!*\n\n` +
+              `👤 Aluno: ${input.name}\n` +
+              `📱 Telefone: ${input.phone ?? "não informado"}\n` +
+              `🏫 Restaurante: ${restaurant?.name ?? "ImAInd"}\n` +
+              `💬 Idioma: ${langLabel}\n` +
+              `⭐ Nota: ${input.rating ?? "? "}/5\n\n` +
+              `Este aluno demonstrou interesse em estudar ${langLabel} na inFlux! Entre em contato 😊`;
+            try {
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phone: consultantWhatsapp,
+                  message: whatsappMsg,
+                  type: "lead_notification",
+                  leadData: { name: input.name, phone: input.phone, restaurant: restaurant?.name, language: input.language, rating: input.rating },
+                }),
+              });
+            } catch (err) {
+              console.error("[WhatsApp Lead] Failed to send:", err);
+            }
+          }
         }
         return { success: true };
       }),
@@ -322,6 +378,12 @@ export const appRouter = router({
         return getStudentScores(input.studentName);
       }),
 
+    publicProfile: publicProcedure
+      .input(z.object({ studentName: z.string() }))
+      .query(async ({ input }) => {
+        return getStudentDetail(input.studentName);
+      }),
+
     leaderboard: publicProcedure
       .input(z.object({
         gameType: z.string().optional(),
@@ -329,6 +391,63 @@ export const appRouter = router({
       }).optional())
       .query(async ({ input }) => {
         return getLeaderboard(input?.gameType, input?.language);
+      }),
+
+    aiFeedback: publicProcedure
+      .input(z.object({
+        transcript: z.string().min(1),
+        question: z.string().min(1),
+        expectedAnswer: z.string().min(1),
+        language: z.enum(["en", "es"]),
+        isCorrect: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        const { transcript, question, expectedAnswer, language, isCorrect } = input;
+        const isEnglish = language === "en";
+
+        const systemPrompt = isEnglish
+          ? `You are an encouraging English language coach at a restaurant simulation app for Brazilian students. 
+Give brief, warm feedback (2-3 sentences max) on the student's spoken response. 
+Focus on: grammar accuracy, naturalness, vocabulary choice. 
+If correct: celebrate and highlight what was great. 
+If incorrect: gently point out the issue and give the correct form. 
+Always end with a motivating tip or a more natural alternative phrase. 
+Respond in English only. Be concise and friendly.`
+          : `Eres un coach de español alentador en una app de simulación de restaurante para estudiantes brasileños. 
+Da retroalimentación breve y cálida (máximo 2-3 oraciones) sobre la respuesta hablada del estudiante. 
+Enfócate en: precisión gramatical, naturalidad, elección de vocabulario. 
+Si es correcto: celebra y destaca lo que estuvo bien. 
+Si es incorrecto: señala amablemente el problema y da la forma correcta. 
+Siempre termina con un consejo motivador o una frase más natural. 
+Responde solo en español. Sé conciso y amigable.`;
+
+        const userMessage = isEnglish
+          ? `Question asked: "${question}"
+Expected answer: "${expectedAnswer}"
+Student said: "${transcript}"
+Result: ${isCorrect ? "Correct" : "Incorrect"}
+
+Please give feedback on the student's response.`
+          : `Pregunta hecha: "${question}"
+Respuesta esperada: "${expectedAnswer}"
+El estudiante dijo: "${transcript}"
+Resultado: ${isCorrect ? "Correcto" : "Incorrecto"}
+
+Por favor, da retroalimentación sobre la respuesta del estudiante.`;
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+          });
+          const rawContent = response?.choices?.[0]?.message?.content;
+          const feedback = typeof rawContent === "string" ? rawContent : "";
+          return { feedback: feedback.trim() };
+        } catch {
+          return { feedback: isEnglish ? "Great effort! Keep practicing!" : "¡Buen esfuerzo! ¡Sigue practicando!" };
+        }
       }),
   }),
 

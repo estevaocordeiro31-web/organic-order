@@ -52,6 +52,7 @@ export default function QASimulation() {
   const isEnglish = lang === "en";
 
   const saveScoreMutation = trpc.game.saveScore.useMutation();
+  const aiFeedbackMutation = trpc.game.aiFeedback.useMutation();
 
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -63,6 +64,8 @@ export default function QASimulation() {
   const [gameOver, setGameOver] = useState(false);
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [chatHistory, setChatHistory] = useState<{ role: "waiter" | "student"; text: string }[]>([]);
+  const [aiFeedbackText, setAiFeedbackText] = useState<string | null>(null);
+  const [showAiFeedback, setShowAiFeedback] = useState(false);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { speak, isSpeaking, isMuted, toggleMute, isSupported: ttsSupported } = useTTS();
@@ -153,8 +156,9 @@ export default function QASimulation() {
     const spoken = spokenText.toLowerCase().replace(/[.,!?¡¿']/g, "").trim();
     const keywordsMatched = currentQ.keywords.filter(kw => spoken.includes(kw.toLowerCase())).length;
     const matchRatio = keywordsMatched / currentQ.keywords.length;
+    const correct = matchRatio >= 0.5;
 
-    if (matchRatio >= 0.5) {
+    if (correct) {
       setScore(prev => prev + 1);
       setShowResult("correct");
       setChatHistory(prev => [...prev, {
@@ -169,6 +173,16 @@ export default function QASimulation() {
           ? `Good try! A better answer: "${currentQ.expectedAnswer}"`
           : `¡Buen intento! Mejor respuesta: "${currentQ.expectedAnswer}"`
       }]);
+    }
+
+    // Request AI feedback
+    setAiFeedbackText(null);
+    setShowAiFeedback(false);
+    if (spokenText.length > 2) {
+      aiFeedbackMutation.mutate(
+        { transcript: spokenText, question: currentQ.question, expectedAnswer: currentQ.expectedAnswer, language: lang, isCorrect: correct },
+        { onSuccess: (data) => { setAiFeedbackText(data.feedback); } }
+      );
     }
   };
 
@@ -434,6 +448,47 @@ export default function QASimulation() {
               >
                 {isEnglish ? "Need a hint?" : "¿Necesitas una pista?"}
               </button>
+            )}
+          </div>
+        )}
+
+        {/* AI Feedback */}
+        {showResult && (
+          <div className="mb-3">
+            {aiFeedbackMutation.isPending && !aiFeedbackText && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                <Sparkles className="w-4 h-4 text-primary animate-pulse shrink-0" />
+                <p className="text-xs text-muted-foreground italic">
+                  {isEnglish ? "AI coach is analyzing your answer..." : "El coach de IA está analizando tu respuesta..."}
+                </p>
+              </div>
+            )}
+            {aiFeedbackText && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-xl bg-primary/5 border border-primary/20"
+              >
+                <button
+                  onClick={() => setShowAiFeedback(p => !p)}
+                  className="flex items-center gap-2 w-full text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-xs font-semibold text-primary">
+                    {isEnglish ? "AI Coach Feedback" : "Retroalimentación del Coach IA"}
+                  </span>
+                  <ChevronRight className={`w-3 h-3 text-primary ml-auto transition-transform ${showAiFeedback ? "rotate-90" : ""}`} />
+                </button>
+                {showAiFeedback && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="text-xs text-foreground/80 mt-2 leading-relaxed"
+                  >
+                    {aiFeedbackText}
+                  </motion.p>
+                )}
+              </motion.div>
             )}
           </div>
         )}

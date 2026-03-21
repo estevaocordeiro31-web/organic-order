@@ -321,3 +321,34 @@
 - [x] Botão de toggle mute/unmute no canto da tela
 - [x] Preferência de mute salva no localStorage
 - [x] Testes vitest para o hook useTTS
+
+## v19 - Feedback de IA em Tempo Real no Q&A Simulation
+
+- [x] Procedure tRPC: `game.aiFeedback` — recebe transcript + pergunta + resposta esperada e retorna comentário personalizado via LLM
+- [x] Prompt de sistema: professor de inglês/espanhol que dá feedback encorajador, aponta erros gramaticais e sugere alternativas mais naturais
+- [x] Integrar no QASimulation (Organic): exibir comentário da IA após cada resposta
+- [x] Integrar no PartnerQASimulation: exibir comentário da IA após cada resposta
+- [x] Loading state enquanto IA processa (skeleton/spinner)
+- [x] Feedback colapsável (expandir para ver detalhes)
+- [x] Testes vitest para a procedure aiFeedback
+
+## v20 - Notificação Automática WhatsApp para Consultores
+
+- [x] Procedure tRPC: `leads.notifyConsultant` — dispara WhatsApp para o consultor quando lead tem nota >= 4
+- [x] Mensagem formatada: nome do aluno, telefone, restaurante, idioma, nota, data
+- [x] Trigger automático: ao salvar lead com interesse = true, notificar consultor escolhido
+- [x] Fallback: se consultor não tem WhatsApp cadastrado, notificar número padrão (Lucas/Vicky)
+- [x] Log de notificações enviadas no banco (evitar duplicatas)
+- [x] Testes vitest para a procedure de notificação
+
+## v21 - Página Pública de Resultados por Aluno
+
+- [x] Rota pública `/aluno/:studentName` — sem autenticação
+- [x] Buscar scores do aluno por nome (case-insensitive)
+- [x] Exibir: total de XP, atividades realizadas, expressões praticadas, restaurantes visitados
+- [x] Gráfico de evolução de XP ao longo do tempo
+- [x] Top 5 expressões mais praticadas
+- [x] Badge de conquistas (primeiro pedido, 10 expressões, 50 XP, etc.)
+- [x] Botão "Compartilhar" que copia URL para clipboard
+- [x] Design imersivo com tema ImAInd
+- [x] Testes vitest para as procedures públicas de progresso

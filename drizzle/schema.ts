@@ -240,8 +240,12 @@ export const leads = mysqlTable("leads", {
   name: varchar("name", { length: 200 }),
   phone: varchar("phone", { length: 50 }),
   consultant: mysqlEnum("consultant", ["lucas", "vicky"]),
+  consultantId: int("consultantId"),
+  consultantName: varchar("consultantName", { length: 100 }),
+  consultantWhatsapp: varchar("consultantWhatsapp", { length: 30 }),
   restaurantName: varchar("restaurantName", { length: 200 }),
   notified: boolean("notified").default(false).notNull(),
+  consultantNotified: boolean("consultantNotified").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
