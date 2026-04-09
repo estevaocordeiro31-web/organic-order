@@ -209,14 +209,9 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
-
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
   }
 };
 
@@ -265,68 +260,86 @@ const normalizeResponseFormat = ({
   };
 };
 
+/**
+ * Invoke Google Gemini 2.5 Flash API directly
+ * Gemini free tier: 15 requests per minute
+ */
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
 
   const {
     messages,
-    tools,
-    toolChoice,
-    tool_choice,
-    outputSchema,
-    output_schema,
-    responseFormat,
-    response_format,
+    maxTokens,
+    max_tokens,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage),
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY!;
+  const maxTokensValue = maxTokens || max_tokens || 1024;
+
+  // Convert messages to Gemini format
+  const geminiMessages = messages.map(msg => {
+    const role = msg.role === "assistant" ? "model" : "user";
+    const content = typeof msg.content === "string" 
+      ? msg.content 
+      : Array.isArray(msg.content)
+        ? msg.content.map(c => typeof c === "string" ? c : c.type === "text" ? c.text : JSON.stringify(c)).join("\n")
+        : JSON.stringify(msg.content);
+    
+    return { role, parts: [{ text: content }] };
+  });
+
+  const payload = {
+    contents: geminiMessages,
+    generationConfig: {
+      maxOutputTokens: maxTokensValue,
+      temperature: 0.7,
+    },
   };
 
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
-
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
-
-  const normalizedResponseFormat = normalizeResponseFormat({
-    responseFormat,
-    response_format,
-    outputSchema,
-    output_schema,
-  });
-
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
-  }
-
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
     );
-  }
 
-  return (await response.json()) as InvokeResult;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Gemini API failed: ${response.status} ${response.statusText} – ${errorText}`
+      );
+    }
+
+    const data = await response.json() as any;
+
+    // Transform Gemini response to OpenAI-compatible format
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    return {
+      id: data.candidates?.[0]?.index?.toString() || "0",
+      created: Math.floor(Date.now() / 1000),
+      model: "gemini-2.5-flash",
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant",
+            content,
+          },
+          finish_reason: data.candidates?.[0]?.finishReason || "stop",
+        },
+      ],
+      usage: {
+        prompt_tokens: data.usageMetadata?.promptTokenCount || 0,
+        completion_tokens: data.usageMetadata?.candidatesTokenCount || 0,
+        total_tokens: data.usageMetadata?.totalTokenCount || 0,
+      },
+    };
+  } catch (error) {
+    console.error("[LLM] Gemini API error:", error);
+    throw error;
+  }
 }

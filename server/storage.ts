@@ -1,70 +1,31 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+// Local filesystem storage (replaces Manus Forge Storage)
+// Files stored in /uploads directory on VPS
 
-import { ENV } from './_core/env';
+import fs from "node:fs";
+import path from "node:path";
 
-type StorageConfig = { baseUrl: string; apiKey: string };
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
+const UPLOADS_URL_PREFIX = process.env.UPLOADS_URL_PREFIX || `${process.env.VITE_API_URL || "http://localhost:3000"}/uploads`;
 
-function getStorageConfig(): StorageConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
-
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
-}
-
-function buildUploadUrl(baseUrl: string, relKey: string): URL {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
-
-async function buildDownloadUrl(
-  baseUrl: string,
-  relKey: string,
-  apiKey: string
-): Promise<string> {
-  const downloadApiUrl = new URL(
-    "v1/storage/downloadUrl",
-    ensureTrailingSlash(baseUrl)
-  );
-  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(apiKey),
-  });
-  return (await response.json()).url;
-}
-
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
+// Ensure uploads directory exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
 function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
+  return relKey.replace(/^\/+/, "").replace(/\\/g, "/");
 }
 
-function toFormData(
-  data: Buffer | Uint8Array | string,
-  contentType: string,
-  fileName: string
-): FormData {
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
+function getFilePath(relKey: string): string {
+  const normalized = normalizeKey(relKey);
+  const fullPath = path.join(UPLOADS_DIR, normalized);
+  
+  // Security: prevent path traversal
+  if (!fullPath.startsWith(UPLOADS_DIR)) {
+    throw new Error("Invalid file path");
+  }
+  
+  return fullPath;
 }
 
 export async function storagePut(
@@ -72,31 +33,59 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-    );
+  try {
+    const key = normalizeKey(relKey);
+    const filePath = getFilePath(key);
+    
+    // Create directory if needed
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    // Write file
+    const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+    fs.writeFileSync(filePath, buffer);
+    
+    // Generate URL
+    const url = `${UPLOADS_URL_PREFIX}/${key}`;
+    
+    console.log(`[STORAGE] Uploaded: ${key} (${buffer.length} bytes)`);
+    
+    return { key, url };
+  } catch (error) {
+    console.error("[STORAGE ERROR]", error);
+    throw new Error(`Storage upload failed: ${error instanceof Error ? error.message : String(error)}`);
   }
-  const url = (await response.json()).url;
-  return { key, url };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
-  const key = normalizeKey(relKey);
-  return {
-    key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
-  };
+export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+  try {
+    const key = normalizeKey(relKey);
+    const filePath = getFilePath(key);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${key}`);
+    }
+    
+    const url = `${UPLOADS_URL_PREFIX}/${key}`;
+    
+    return { key, url };
+  } catch (error) {
+    console.error("[STORAGE ERROR]", error);
+    throw new Error(`Storage get failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Serve uploaded files via Express middleware
+ * Usage in server.ts:
+ * 
+ * import express from 'express';
+ * app.use('/uploads', express.static(UPLOADS_DIR));
+ */
+export function getUploadsMiddleware() {
+  const express = require("express");
+  return express.static(UPLOADS_DIR);
 }

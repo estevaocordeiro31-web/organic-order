@@ -352,3 +352,19 @@
 - [x] Botão "Compartilhar" que copia URL para clipboard
 - [x] Design imersivo com tema ImAInd
 - [x] Testes vitest para as procedures públicas de progresso
+
+
+## v22 - Migração para VPS Própria (72.62.9.120)
+
+- [ ] Criar repositório GitHub em github.com/estevaocordeiro31-web
+- [ ] Exportar código completo do projeto para GitHub
+- [ ] Remover vite-plugin-manus-runtime do package.json
+- [ ] Remover Manus OAuth (substituir por JWT simples)
+- [ ] Remover Forge API imports (invokeLLM, storagePut, notifyOwner)
+- [ ] Substituir Forge Storage por filesystem local (/uploads)
+- [ ] Substituir Forge LLM por Google Gemini API ou OpenAI
+- [ ] Criar .env.example com todas as variáveis
+- [ ] Criar script deploy/setup.sh para VPS
+- [ ] Testar build e testes localmente
+- [ ] Verificar compatibilidade com MySQL compartilhado
+- [ ] Gerar documentação de deployment

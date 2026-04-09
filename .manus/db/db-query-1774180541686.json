@@ -1,0 +1,22 @@
+{
+  "query": "SELECT username, LEFT(passwordHash, 64) as passwordHash FROM partner_users WHERE username IN ('organic', 'laguapa', 'elpatron');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute SELECT username, LEFT(passwordHash, 64) as passwordHash FROM partner_users WHERE username IN ('organic', 'laguapa', 'elpatron');",
+  "rows": [
+    {
+      "username": "elpatron",
+      "passwordHash": "83d2bdb1bcb61ee684f58ff02c16494020cf9c6fbd8de98ec20aff40788b8967"
+    },
+    {
+      "username": "laguapa",
+      "passwordHash": "a1d38c1809ebb754c9d89ad46954909727e4213aeef4e0313ba04979cf96b919"
+    },
+    {
+      "username": "organic",
+      "passwordHash": "497e5a25f2746db46f7ad7329a3abfd991f53d8a6612f4b01117097c3bf9ae8d"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tpasswordHash\nelpatron\t83d2bdb1bcb61ee684f58ff02c16494020cf9c6fbd8de98ec20aff40788b8967\nlaguapa\ta1d38c1809ebb754c9d89ad46954909727e4213aeef4e0313ba04979cf96b919\norganic\t497e5a25f2746db46f7ad7329a3abfd991f53d8a6612f4b01117097c3bf9ae8d\n",
+  "stderr": "",
+  "execution_time_ms": 126
+}

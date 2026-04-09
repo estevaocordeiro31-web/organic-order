@@ -1,0 +1,52 @@
+{
+  "query": "SELECT pu.username, pu.displayName, pu.role, r.name AS restaurant_name, r.slug FROM partner_users pu JOIN restaurants r ON pu.restaurantId = r.id WHERE pu.active = 1 ORDER BY r.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2T8Mwbb7L99VC4H.3906649335dc --database Evw5QZUwinvym6RWSTYRUE --execute SELECT pu.username, pu.displayName, pu.role, r.name AS restaurant_name, r.slug FROM partner_users pu JOIN restaurants r ON pu.restaurantId = r.id WHERE pu.active = 1 ORDER BY r.id;",
+  "rows": [
+    {
+      "username": "organic",
+      "displayName": "Organic In The Box",
+      "role": "partner",
+      "restaurant_name": "Organic In The Box",
+      "slug": "organic"
+    },
+    {
+      "username": "estevao",
+      "displayName": "Estevão - Master",
+      "role": "master",
+      "restaurant_name": "Organic In The Box",
+      "slug": "organic"
+    },
+    {
+      "username": "topdog",
+      "displayName": "Top Dog Brasil",
+      "role": "partner",
+      "restaurant_name": "Top Dog Brasil",
+      "slug": "topdog"
+    },
+    {
+      "username": "laguapa",
+      "displayName": "La Guapa",
+      "role": "partner",
+      "restaurant_name": "La Guapa",
+      "slug": "laguapa"
+    },
+    {
+      "username": "elpatron",
+      "displayName": "El Patron",
+      "role": "partner",
+      "restaurant_name": "El Patron",
+      "slug": "elpatron"
+    },
+    {
+      "username": "cabana",
+      "displayName": "Rebeca - Cabana Burger",
+      "role": "partner",
+      "restaurant_name": "Cabana Burger",
+      "slug": "cabana"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tdisplayName\trole\trestaurant_name\tslug\norganic\tOrganic In The Box\tpartner\tOrganic In The Box\torganic\nestevao\tEstevão - Master\tmaster\tOrganic In The Box\torganic\ntopdog\tTop Dog Brasil\tpartner\tTop Dog Brasil\ttopdog\nlaguapa\tLa Guapa\tpartner\tLa Guapa\tlaguapa\nelpatron\tEl Patron\tpartner\tEl Patron\telpatron\ncabana\tRebeca - Cabana Burger\tpartner\tCabana Burger\tcabana\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}
