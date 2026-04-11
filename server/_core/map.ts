@@ -19,19 +19,11 @@ type MapsConfig = {
 };
 
 function getMapsConfig(): MapsConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
-
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Google Maps proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-
-  return {
-    baseUrl: baseUrl.replace(/\/+$/, ""),
-    apiKey,
-  };
+  // Google Maps integration removed for VPS deployment
+  // For production, integrate directly with Google Maps API
+  throw new Error(
+    "Google Maps integration not configured. Set up direct Google Maps API key for VPS deployment."
+  );
 }
 
 // ============================================================================

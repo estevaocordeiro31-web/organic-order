@@ -18,8 +18,14 @@ export async function getDb() {
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
+  // For JWT-based auth, openId can be empty (use email as identifier)
+  if (!user.openId && !user.email) {
+    throw new Error("User openId or email is required for upsert");
+  }
+  
+  // Generate openId from email if not provided
+  if (!user.openId && user.email) {
+    user.openId = `email:${user.email}`;
   }
 
   const db = await getDb();
@@ -54,9 +60,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
     }
 
     if (!values.lastSignedIn) {
@@ -73,6 +76,22 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
+  }
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const { eq } = await import('drizzle-orm');
+    const result = await db.select().from(users).where(
+      eq(users.email, email)
+    ).limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Failed to get user by email:", error);
+    return null;
   }
 }
 

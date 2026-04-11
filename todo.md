@@ -356,15 +356,15 @@
 
 ## v22 - Migração para VPS Própria (72.62.9.120)
 
-- [ ] Criar repositório GitHub em github.com/estevaocordeiro31-web
-- [ ] Exportar código completo do projeto para GitHub
-- [ ] Remover vite-plugin-manus-runtime do package.json
-- [ ] Remover Manus OAuth (substituir por JWT simples)
-- [ ] Remover Forge API imports (invokeLLM, storagePut, notifyOwner)
-- [ ] Substituir Forge Storage por filesystem local (/uploads)
-- [ ] Substituir Forge LLM por Google Gemini API ou OpenAI
-- [ ] Criar .env.example com todas as variáveis
-- [ ] Criar script deploy/setup.sh para VPS
-- [ ] Testar build e testes localmente
-- [ ] Verificar compatibilidade com MySQL compartilhado
-- [ ] Gerar documentação de deployment
+- [x] Criar repositório GitHub em github.com/estevaocordeiro31-web
+- [x] Exportar código completo do projeto para GitHub
+- [x] Remover vite-plugin-manus-runtime do package.json
+- [ ] Remover Manus OAuth (substituir por JWT puro)
+- [x] Remover Forge API imports (invokeLLM, storagePut, notifyOwner)
+- [x] Substituir Forge Storage por filesystem local (/uploads)
+- [x] Substituir Forge LLM por Google Gemini 2.5 Flash (API direta)
+- [x] Criar .env.example com todas as variáveis
+- [ ] Criar script deploy/setup.sh automatizado (padrão Tutor)
+- [ ] Testar build, testes e login JWT localmente
+- [ ] Verificar compatibilidade com MySQL compartilhado (tabela users)
+- [x] Gerar documentação de deployment (MIGRATION_GUIDE_VPS.md)
