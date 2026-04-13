@@ -73,7 +73,10 @@ fi
 # Step 3: Extract credentials from BRAiN .env
 echo -e "\n${YELLOW}Step 3: Loading shared credentials from BRAiN...${NC}"
 
-source "$BRAIN_ENV_FILE"
+# Read .env safely (grep specific keys instead of sourcing, which can fail on complex values)
+DATABASE_URL=$(grep -E '^DATABASE_URL=' "$BRAIN_ENV_FILE" | head -1 | cut -d'=' -f2-)
+JWT_SECRET=$(grep -E '^JWT_SECRET=' "$BRAIN_ENV_FILE" | head -1 | cut -d'=' -f2-)
+GEMINI_API_KEY=$(grep -E '^GOOGLE_GEMINI_API_KEY=' "$BRAIN_ENV_FILE" | head -1 | cut -d'=' -f2-)
 
 # Verify critical variables
 if [ -z "$DATABASE_URL" ]; then
@@ -104,8 +107,8 @@ NODE_ENV=production
 APP_ID=organic-order
 PORT=$APP_PORT
 
-# Gemini LLM (required - get from Google AI Studio)
-GEMINI_API_KEY=${GEMINI_API_KEY:-}
+# Gemini LLM
+GOOGLE_GEMINI_API_KEY=${GEMINI_API_KEY:-}
 
 # File Storage
 UPLOADS_DIR=$UPLOADS_DIR
