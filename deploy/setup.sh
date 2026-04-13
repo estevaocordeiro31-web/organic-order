@@ -31,7 +31,7 @@ BRAIN_ENV_FILE="/var/www/brain/.env"
 APP_DIR="/var/www/experience"
 UPLOADS_DIR="/var/www/experience/uploads"
 APP_NAME="imaind-experience"
-APP_PORT="3001"
+APP_PORT="3004"
 DOMAIN="${DOMAIN:-experience.imaind.tech}"
 
 echo -e "${YELLOW}=== ImAInd Experience VPS Setup ===${NC}"
