@@ -6,11 +6,11 @@ import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Leaf, Clock, ChefHat, CheckCircle2, Truck } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  pending: { label: "Order Received", icon: <Clock className="w-5 h-5" />, color: "bg-yellow-100 text-yellow-700" },
-  preparing: { label: "Being Prepared", icon: <ChefHat className="w-5 h-5" />, color: "bg-blue-100 text-blue-700" },
-  ready: { label: "Ready for Pickup", icon: <CheckCircle2 className="w-5 h-5" />, color: "bg-green-100 text-green-700" },
+  pending: { label: "Order Received", icon: <Clock className="w-5 h-5" />, color: "bg-yellow-500/15 text-yellow-300" },
+  preparing: { label: "Being Prepared", icon: <ChefHat className="w-5 h-5" />, color: "bg-blue-500/15 text-blue-300" },
+  ready: { label: "Ready for Pickup", icon: <CheckCircle2 className="w-5 h-5" />, color: "bg-green-500/15 text-green-300" },
   delivered: { label: "Delivered", icon: <Truck className="w-5 h-5" />, color: "bg-primary/10 text-primary" },
-  cancelled: { label: "Cancelled", icon: <Clock className="w-5 h-5" />, color: "bg-red-100 text-red-700" },
+  cancelled: { label: "Cancelled", icon: <Clock className="w-5 h-5" />, color: "bg-red-500/15 text-red-300" },
 };
 
 export default function OrderStatus() {

@@ -160,7 +160,7 @@ export default function PhraseBuilder() {
               >
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                    d === "easy" ? "bg-green-100" : d === "medium" ? "bg-amber-100" : "bg-red-100"
+                    d === "easy" ? "bg-green-500/15" : d === "medium" ? "bg-amber-500/15" : "bg-red-500/15"
                   }`}>
                     <span className="text-xl">
                       {d === "easy" ? "⭐" : d === "medium" ? "⭐⭐" : "⭐⭐⭐"}
@@ -362,23 +362,23 @@ export default function PhraseBuilder() {
               exit={{ opacity: 0 }}
               className={`p-4 rounded-xl mb-4 text-center ${
                 showResult === "correct"
-                  ? "bg-green-50 border border-green-200"
-                  : "bg-red-50 border border-red-200"
+                  ? "bg-green-500/10 border border-green-500/20"
+                  : "bg-red-500/10 border border-red-500/20"
               }`}
             >
               {showResult === "correct" ? (
                 <>
-                  <Sparkles className="w-6 h-6 text-green-500 mx-auto mb-1" />
-                  <p className="font-semibold text-green-700 text-sm">
+                  <Sparkles className="w-6 h-6 text-green-400 mx-auto mb-1" />
+                  <p className="font-semibold text-green-400 text-sm">
                     {isEnglish ? "Perfect!" : "¡Perfecto!"}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="font-semibold text-red-700 text-sm mb-1">
+                  <p className="font-semibold text-red-400 text-sm mb-1">
                     {isEnglish ? "Not quite!" : "¡Casi!"}
                   </p>
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-red-400">
                     {isEnglish ? "Correct answer: " : "Respuesta correcta: "}
                     <strong>{currentExpression.expression}</strong>
                   </p>

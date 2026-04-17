@@ -32,9 +32,9 @@ export default function Leaderboard() {
   };
 
   const getRankBg = (index: number) => {
-    if (index === 0) return "bg-gradient-to-r from-amber-50 to-amber-100/50 border-amber-200";
-    if (index === 1) return "bg-gradient-to-r from-gray-50 to-gray-100/50 border-gray-200";
-    if (index === 2) return "bg-gradient-to-r from-orange-50 to-orange-100/50 border-orange-200";
+    if (index === 0) return "bg-amber-500/10 border-amber-500/20";
+    if (index === 1) return "bg-white/5 border-white/10";
+    if (index === 2) return "bg-orange-500/10 border-orange-500/20";
     return "bg-card border-border";
   };
 

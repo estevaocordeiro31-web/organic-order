@@ -707,12 +707,12 @@ export default function OrderPage() {
           </Card>
 
           {/* Instructions */}
-          <Card className="mb-4 bg-amber-50 border-amber-200">
+          <Card className="mb-4 bg-amber-500/10 border-amber-500/20">
             <CardContent className="p-4">
-              <p className="text-sm font-medium text-amber-800 mb-2">
+              <p className="text-sm font-medium text-amber-400 mb-2">
                 {t(lang, "How to pay:", "Cómo pagar:")}
               </p>
-              <ol className="text-xs text-amber-700 space-y-1 list-decimal list-inside">
+              <ol className="text-xs text-amber-400/80 space-y-1 list-decimal list-inside">
                 <li>{t(lang, "Open your bank app", "Abre tu app del banco")}</li>
                 <li>{t(lang, "Go to Pix → Pay with Pix Key", "Ve a Pix → Pagar con Chave Pix")}</li>
                 <li>{t(lang, "Paste the key above and enter the amount", "Pega la chave y ingresa el valor")}</li>
@@ -754,10 +754,10 @@ export default function OrderPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="mb-4 border-green-200 bg-green-50">
+            <Card className="mb-4 border-green-500/20 bg-green-500/10">
               <CardContent className="p-5 text-center">
-                <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-2" />
-                <p className="text-sm font-medium text-green-800">
+                <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-green-300">
                   {t(lang, "Receipt sent! We'll verify it shortly.", "¡Comprobante enviado! Lo verificaremos pronto.")}
                 </p>
               </CardContent>
@@ -815,7 +815,7 @@ export default function OrderPage() {
 
           {paymentProofSent && (
             <div className="flex items-center justify-center gap-2 mb-3">
-              <Badge className="bg-green-100 text-green-800 border-green-200">
+              <Badge className="bg-green-500/15 text-green-300 border-green-500/20">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 {t(lang, "Payment proof sent", "Comprobante enviado")}
               </Badge>

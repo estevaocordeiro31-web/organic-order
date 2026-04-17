@@ -19,11 +19,11 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 
 const statusFlow: Record<string, { next: string; label: string; icon: React.ReactNode; color: string }> = {
-  pending: { next: "preparing", label: "Start Preparing", icon: <ChefHat className="w-4 h-4" />, color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  preparing: { next: "ready", label: "Mark as Ready", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-blue-100 text-blue-800 border-blue-200" },
-  ready: { next: "delivered", label: "Mark Delivered", icon: <Truck className="w-4 h-4" />, color: "bg-green-100 text-green-800 border-green-200" },
+  pending: { next: "preparing", label: "Start Preparing", icon: <ChefHat className="w-4 h-4" />, color: "bg-yellow-500/15 text-yellow-300 border-yellow-500/20" },
+  preparing: { next: "ready", label: "Mark as Ready", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-blue-500/15 text-blue-300 border-blue-500/20" },
+  ready: { next: "delivered", label: "Mark Delivered", icon: <Truck className="w-4 h-4" />, color: "bg-green-500/15 text-green-300 border-green-500/20" },
   delivered: { next: "", label: "Completed", icon: <CheckCircle2 className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/20" },
-  cancelled: { next: "", label: "Cancelled", icon: <XCircle className="w-4 h-4" />, color: "bg-red-100 text-red-800 border-red-200" },
+  cancelled: { next: "", label: "Cancelled", icon: <XCircle className="w-4 h-4" />, color: "bg-red-500/15 text-red-300 border-red-500/20" },
 };
 
 function useNotificationSound() {
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
             { label: "Total Orders", value: stats?.total || 0, icon: <ShoppingCart className="w-4 h-4" />, color: "text-foreground" },
             { label: "Pending", value: stats?.pending || 0, icon: <Clock className="w-4 h-4" />, color: "text-yellow-600" },
             { label: "Preparing", value: stats?.preparing || 0, icon: <ChefHat className="w-4 h-4" />, color: "text-blue-600" },
-            { label: "Ready", value: stats?.ready || 0, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-green-600" },
+            { label: "Ready", value: stats?.ready || 0, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-green-400" },
             { label: "Revenue", value: `R$ ${(stats?.revenue || 0).toFixed(0)}`, icon: <DollarSign className="w-4 h-4" />, color: "text-primary" },
           ].map((stat) => (
             <Card key={stat.label}>
@@ -329,9 +329,9 @@ export default function AdminDashboard() {
                             {/* Payment Status Badge */}
                             <div className="flex items-center gap-2 mb-2">
                               <Badge className={`text-xs ${
-                                order.paymentStatus === "paid" ? "bg-green-100 text-green-800 border-green-200" :
-                                order.paymentStatus === "pending_verification" ? "bg-amber-100 text-amber-800 border-amber-200" :
-                                "bg-gray-100 text-gray-600 border-gray-200"
+                                order.paymentStatus === "paid" ? "bg-green-500/15 text-green-300 border-green-500/20" :
+                                order.paymentStatus === "pending_verification" ? "bg-amber-500/15 text-amber-300 border-amber-500/20" :
+                                "bg-white/5 text-white/50 border-white/10"
                               }`}>
                                 <CreditCard className="w-3 h-3 mr-1" />
                                 {order.paymentStatus === "paid" ? "Pago ✅" :
@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="text-green-700 border-green-300 hover:bg-green-50"
+                                  className="text-green-400 border-green-500/30 hover:bg-green-500/10"
                                   onClick={() =>
                                     updatePaymentMutation.mutate({
                                       orderId: order.id,
@@ -445,14 +445,14 @@ export default function AdminDashboard() {
                       <div
                         key={`${entry.studentName}-${index}`}
                         className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          index === 0 ? "bg-amber-50 border-amber-200" :
-                          index === 1 ? "bg-gray-50 border-gray-200" :
-                          index === 2 ? "bg-orange-50 border-orange-200" :
+                          index === 0 ? "bg-amber-500/10 border-amber-500/20" :
+                          index === 1 ? "bg-white/5 border-white/10" :
+                          index === 2 ? "bg-orange-500/10 border-orange-500/20" :
                           "border-border"
                         }`}
                       >
                         <span className={`w-6 text-center font-bold text-sm ${
-                          index === 0 ? "text-amber-600" : index === 1 ? "text-gray-500" : index === 2 ? "text-orange-600" : "text-muted-foreground"
+                          index === 0 ? "text-amber-400" : index === 1 ? "text-gray-400" : index === 2 ? "text-orange-400" : "text-muted-foreground"
                         }`}>
                           {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}`}
                         </span>

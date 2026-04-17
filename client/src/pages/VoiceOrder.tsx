@@ -220,8 +220,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("easy")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                  <Eye className="w-7 h-7 text-green-600" />
+                <div className="w-14 h-14 rounded-xl bg-green-500/15 flex items-center justify-center shrink-0">
+                  <Eye className="w-7 h-7 text-green-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -242,8 +242,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("medium")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <EyeOff className="w-7 h-7 text-amber-600" />
+                <div className="w-14 h-14 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <EyeOff className="w-7 h-7 text-amber-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -264,8 +264,8 @@ export default function VoiceOrder() {
               onClick={() => setDifficulty("hard")}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                  <Mic className="w-7 h-7 text-red-600" />
+                <div className="w-14 h-14 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+                  <Mic className="w-7 h-7 text-red-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground">
@@ -447,7 +447,7 @@ export default function VoiceOrder() {
                 {isSpeaking ? (isEnglish ? "Playing..." : "Reproduciendo...") : (isEnglish ? "Listen" : "Escuchar")}
               </button>
               {difficulty === "medium" && (
-                <p className="text-xs text-amber-600 animate-pulse mt-2">
+                <p className="text-xs text-amber-400 animate-pulse mt-2">
                   {isEnglish ? "Memorize it! Disappearing soon..." : "¡Memorízala! Desaparecerá pronto..."}
                 </p>
               )}
@@ -518,8 +518,8 @@ export default function VoiceOrder() {
               animate={{ opacity: 1, y: 0 }}
             >
               <Card className={`mb-4 ${
-                showResult === "correct" ? "border-green-400 bg-green-50" :
-                showResult === "wrong" ? "border-red-400 bg-red-50" :
+                showResult === "correct" ? "border-green-500/30 bg-green-500/10" :
+                showResult === "wrong" ? "border-red-500/30 bg-red-500/10" :
                 "border-border"
               }`}>
                 <CardContent className="p-4 text-center">
@@ -529,7 +529,7 @@ export default function VoiceOrder() {
                   <p className="text-base font-medium text-foreground mb-3">"{transcript}"</p>
 
                   {showResult === "correct" && (
-                    <div className="flex items-center justify-center gap-2 text-green-600">
+                    <div className="flex items-center justify-center gap-2 text-green-400">
                       <Sparkles className="w-5 h-5" />
                       <p className="font-semibold text-sm">
                         {isEnglish ? "Excellent pronunciation!" : "¡Excelente pronunciación!"}
@@ -539,13 +539,13 @@ export default function VoiceOrder() {
 
                   {showResult === "wrong" && (
                     <div>
-                      <p className="font-semibold text-red-600 text-sm mb-1">
+                      <p className="font-semibold text-red-400 text-sm mb-1">
                         {isEnglish ? "Almost there! Try to say:" : "¡Casi! Intenta decir:"}
                       </p>
-                      <p className="text-sm text-red-700 font-medium">"{currentExpression.expression}"</p>
+                      <p className="text-sm text-red-400 font-medium">"{currentExpression.expression}"</p>
                       <button
                         onClick={() => speakPhrase(currentExpression.expression)}
-                        className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                        className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-red-500/15 text-red-400 hover:bg-red-500/20 transition-colors"
                       >
                         <Volume2 className="w-3 h-3" /> {isEnglish ? "Hear correct" : "Escuchar correcto"}
                       </button>

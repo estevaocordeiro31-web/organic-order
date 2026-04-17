@@ -437,7 +437,7 @@ export default function QASimulation() {
           <div className="text-center mb-3">
             {showHint ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20">
                   💡 {currentQ.hint}
                 </Badge>
               </motion.div>

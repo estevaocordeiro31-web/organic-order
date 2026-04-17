@@ -70,10 +70,43 @@ export default function StudentProfile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-white/60 text-sm">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-purple-500/5 to-transparent" />
+          <div className="relative px-4 pt-6 pb-8 max-w-lg mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-4 w-16 rounded bg-white/5 animate-pulse" />
+              <div className="h-8 w-20 rounded-lg bg-white/5 animate-pulse" />
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-white/5 animate-pulse mb-3" />
+              <div className="h-6 w-40 rounded bg-white/5 animate-pulse mb-2" />
+              <div className="h-4 w-32 rounded bg-white/5 animate-pulse" />
+            </div>
+          </div>
+        </div>
+        <div className="max-w-lg mx-auto px-4 pb-12 space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col items-center gap-2">
+                <div className="w-5 h-5 rounded bg-white/5 animate-pulse" />
+                <div className="h-5 w-12 rounded bg-white/5 animate-pulse" />
+                <div className="h-3 w-14 rounded bg-white/5 animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="h-4 w-28 rounded bg-white/5 animate-pulse" />
+            <div className="flex gap-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-7 w-20 rounded-full bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div className="h-4 w-32 rounded bg-white/5 animate-pulse mb-4" />
+            <div className="h-24 w-full rounded bg-white/5 animate-pulse" />
+          </div>
         </div>
       </div>
     );
